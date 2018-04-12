@@ -1,0 +1,56 @@
+// Copyright (c) M5Stack. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+#include "odroid_go.h"
+
+void ODROID_GO::begin() {
+    
+    // UART 
+    Serial.begin(115200);
+    Serial.flush();
+    Serial.print("ODROID_GO initializing...");
+
+    Speaker.begin();
+
+    pinMode(BUTTON_A_PIN, INPUT_PULLUP);
+    pinMode(BUTTON_B_PIN, INPUT_PULLUP);
+    pinMode(BUTTON_MENU, INPUT_PULLUP);
+    pinMode(BUTTON_SELECT, INPUT_PULLUP);
+    pinMode(BUTTON_START, INPUT_PULLUP);
+    pinMode(BUTTON_VOLUME, INPUT_PULLUP);
+    pinMode(BUTTON_JOY_X, INPUT_PULLDOWN);
+    pinMode(25, INPUT_PULLUP);
+
+    // I2C
+    /*
+    pinMode(SCL, OUTPUT);
+    digitalWrite(SDA, 1);
+    */
+
+    // ODROID_GO LCD INIT
+    lcd.begin();
+    lcd.setRotation(7);
+    lcd.fillScreen(BLACK);
+    lcd.setCursor(0, 0);
+    lcd.setTextColor(WHITE);
+    lcd.setTextSize(1);
+    lcd.setBrightness(255);
+
+    Serial.println("OK");
+}
+
+void ODROID_GO::update() {
+
+    //Button update
+    BtnA.read();
+    BtnB.read();
+    BtnMenu.read();
+    BtnVolume.read();
+    BtnSelect.read();
+    BtnStart.read();
+    JOY_X.readAxis(1);
+
+    //Speaker update
+    Speaker.update();
+}
+ODROID_GO GO;
