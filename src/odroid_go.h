@@ -18,9 +18,9 @@
 
 #include "utility/ODROID_Si1132.h"
 #include "utility/ODROID_Si70xx.h"
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BMP085_U.h>
-#include <Adafruit_BME280.h>
+#include "utility/Adafruit_Sensor.h"
+#include "utility/Adafruit_BMP085_U.h"
+#include "utility/Adafruit_BME280.h"
 
 extern "C" {
 #include "esp_sleep.h"
