@@ -1,3 +1,6 @@
+#ifndef ODROID_Si1132_H
+#define ODROID_Si1132_H
+
 #if (ARDUINO >= 100)
 	#include "Arduino.h"
 #else
@@ -86,6 +89,7 @@ class ODROID_Si1132 {
 		ODROID_Si1132(void);
 		boolean begin(void);
 		void reset(void);
+		void configRegister(void);
 		uint16_t readTemperature(void);
 		uint16_t readUV(void);
 		float readVisible(void);
@@ -98,4 +102,5 @@ class ODROID_Si1132 {
 		uint8_t writeParam(uint8_t p, uint8_t v);
 		uint8_t _addr;
 };
-	
+
+#endif

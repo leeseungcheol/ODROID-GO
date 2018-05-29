@@ -1,0 +1,3 @@
+autorun=0
+voltage=5.00
+firstboot=1

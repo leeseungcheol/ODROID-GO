@@ -3,6 +3,8 @@
 ODROID_Si70xx::ODROID_Si70xx()
 {
 	Wire.begin(15, 4);
+	//if (read8(Si1132_REG_CHIPID) != 0x60)
+	//	return false;
 }
 
 float ODROID_Si70xx::readTemperature(void)
