@@ -2,21 +2,25 @@
 
 uint8_t Weather_Board::begin(void)
 {
+    revision = 0;
     // Check board version
-    if (read8(BME280_ADDRESS, BME280_REGISTER_CHIPID) != 0x60)
-        WB_VERSION = 1;
-
-    if (WB_VERSION == 1) {
+    Wire.beginTransmission(96);
+    if (Wire.endTransmission() == 0) {
+        revision = 2;
+        bme.begin();
+        si1132.begin();
+    }
+    
+    //Wire.beginTransmission((byte)BMP085_REGISTER_CHIPID);
+    Wire.beginTransmission(119);
+    if (Wire.endTransmission() == 0) {
+        revision = 1;
         bmp.begin();
         sensor_t sensor;
         bmp.getSensor(&sensor);
-        return 1;
-    } else {
-        if (!bme.begin()) {
-        }
+        si1132.begin();
     }
-
-//    si1132.begin();
+    return revision;
 }
 
 uint8_t Weather_Board::read8(byte _i2caddr, byte reg)
@@ -45,7 +49,7 @@ void Weather_Board::getBMP180()
 
 void Weather_Board::getSi1132()
 {
-/*
+
     Si1132UVIndex = 0;
     Si1132Visible = 0;
     Si1132IR = 0;
@@ -58,7 +62,7 @@ void Weather_Board::getSi1132()
     Si1132UVIndex /= 100;
     Si1132Visible /= 10;
     Si1132IR /= 10;
-*/
+
 }
 
 void Weather_Board::getSi7020()
@@ -71,16 +75,13 @@ void Weather_Board::getSi7020()
 
 void Weather_Board::getBME280(void)
 {
-
     BME280Temperature = bme.readTemperature();
     BME280Pressure = (bme.readPressure() / 100);
     BME280Humidity = bme.readHumidity();
     BME280Altitude = bme.readAltitude(SEALEVELPRESSURE_HPA);
-
 }
 void Weather_Board::errorCheck()
 {
-
     if ((read8(BME280_ADDRESS, BME280_REGISTER_CHIPID) != 0x60) &&
             (read8(BMP085_ADDRESS, BMP085_REGISTER_CHIPID) != 0x55)) {
         if (!errorState) {
@@ -90,14 +91,14 @@ void Weather_Board::errorCheck()
         errorState = 1;
     } else if (errorState) {
         if (read8(BME280_ADDRESS, BME280_REGISTER_CHIPID) != 0x60) {
-            WB_VERSION = 1;
+            revision = 1;
         } else {
-            WB_VERSION = 2;
+            revision = 2;
         }
         
         //si1132.begin();
         
-        if (WB_VERSION == 1) {
+        if (revision == 1) {
             bmp.begin();
             sensor_t sensor;
             bmp.getSensor(&sensor);

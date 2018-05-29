@@ -14,7 +14,7 @@ class Weather_Board {
         Adafruit_BME280 bme; // I2C
         ODROID_Si70xx si7020;
         ODROID_Si1132 si1132;
-        uint8_t WB_VERSION = 0;
+        uint8_t revision = 0;
         uint8_t errorState = 0;
         
         float BMP180Temperature = 0;
