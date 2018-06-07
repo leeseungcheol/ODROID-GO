@@ -35,6 +35,7 @@ class ODROID_GO {
     void update();
 
     #define DEBOUNCE_MS 5
+    Button JOY_Y = Button(BUTTON_JOY_Y, true, DEBOUNCE_MS);
     Button JOY_X = Button(BUTTON_JOY_X, true, DEBOUNCE_MS);
     Button BtnA = Button(BUTTON_A_PIN, true, DEBOUNCE_MS);
     Button BtnB = Button(BUTTON_B_PIN, true, DEBOUNCE_MS);
