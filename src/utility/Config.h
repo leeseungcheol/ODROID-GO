@@ -15,6 +15,7 @@
 #define BUTTON_SELECT 27
 #define BUTTON_VOLUME 0
 #define BUTTON_START 39
+#define BUTTON_JOY_Y 35
 #define BUTTON_JOY_X 34
 
 

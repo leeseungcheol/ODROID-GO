@@ -48,6 +48,7 @@ void ODROID_GO::update() {
     BtnVolume.read();
     BtnSelect.read();
     BtnStart.read();
+    JOY_Y.readAxis(1);
     JOY_X.readAxis(1);
 
     //Speaker update
