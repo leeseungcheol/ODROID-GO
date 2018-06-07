@@ -18,6 +18,7 @@ void ODROID_GO::begin() {
     pinMode(BUTTON_SELECT, INPUT_PULLUP);
     pinMode(BUTTON_START, INPUT_PULLUP);
     pinMode(BUTTON_VOLUME, INPUT_PULLUP);
+    pinMode(BUTTON_JOY_Y, INPUT_PULLDOWN);
     pinMode(BUTTON_JOY_X, INPUT_PULLDOWN);
     pinMode(25, INPUT_PULLUP);
 
@@ -48,8 +49,8 @@ void ODROID_GO::update() {
     BtnVolume.read();
     BtnSelect.read();
     BtnStart.read();
-    JOY_Y.readAxis(1);
-    JOY_X.readAxis(1);
+    JOY_Y.readAxis();
+    JOY_X.readAxis();
 
     //Speaker update
     Speaker.update();

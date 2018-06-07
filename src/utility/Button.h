@@ -15,16 +15,22 @@
 // #else
 // #include <WProgram.h> 
 // #endif
+
+#define DPAD_V_FULL 2
+#define DPAD_V_HALF 1
+#define DPAD_V_NONE 0
+
 class Button
 {
     public:
         Button(uint8_t pin, uint8_t invert, uint32_t dbTime);
         uint8_t read();
-        uint8_t readAxis(uint8_t axis);
-        uint8_t isAxisPressed();
+        uint8_t readAxis();
         uint8_t isPressed();
+        uint8_t isAxisPressed();
         uint8_t isReleased();
         uint8_t wasPressed();
+        uint8_t wasAxisPressed();
         uint8_t wasReleased();
         uint8_t pressedFor(uint32_t ms);
         uint8_t releasedFor(uint32_t ms);

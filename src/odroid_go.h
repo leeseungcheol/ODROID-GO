@@ -40,8 +40,8 @@ class ODROID_GO {
     Button BtnA = Button(BUTTON_A_PIN, true, DEBOUNCE_MS);
     Button BtnB = Button(BUTTON_B_PIN, true, DEBOUNCE_MS);
     Button BtnMenu = Button(BUTTON_MENU, true, DEBOUNCE_MS);
-    Button BtnVolume = Button(BUTTON_SELECT, true, DEBOUNCE_MS);
-    Button BtnSelect = Button(BUTTON_VOLUME, true, DEBOUNCE_MS);
+    Button BtnVolume = Button(BUTTON_VOLUME, true, DEBOUNCE_MS);
+    Button BtnSelect = Button(BUTTON_SELECT, true, DEBOUNCE_MS);
     Button BtnStart = Button(BUTTON_START, true, DEBOUNCE_MS);
 
     // LCD
