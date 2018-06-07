@@ -1,186 +1,28 @@
 <!DOCTYPE HTML>
 <html>
-
 <head>
-    <meta charset="utf-8" />
     <title>Weather Station</title>
+
+    <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" type="text/css" href="css/jquerymobile145.css">
-    <script language="javascript" type="text/javascript" src="js/jquery.mobile-1.4.5.min.js"></script>
-    <script>
-        $(document).bind('mobileinit', function() {
-            $.mobile.pushStateEnabled = false;
-        });
-    </script>
-    <script src="js/sevenSeg.js"></script>
-    <script src="js/settings.js"></script>
 
+    <!-- Import file names has to be not too long -->
+    <link rel="stylesheet" href="css/jquerymobile145.css">
+    <link rel="stylesheet" href="css/ws_style.css">
+
+    <script type="text/javascript" src="js/jquery.mobile-1.4.5.min.js"></script>
+    <script type="text/javascript" src="js/sevenSeg.js"></script>
+    <script type="text/javascript" src="js/settings.js"></script>
+    <script type="text/javascript" src="js/ws_websocket.js"></script>
+    <script type="text/javascript" src="js/ws_page_setup.js"></script>
 </head>
-
-<script type="text/javascript">
-    var SET_DEFAULT_VOLTAGE = 'v';
-    var SET_VOLTAGE = 'w';
-    var SET_AUTORUN = 'a';
-    var SAVE_NETWORKS = 'n';
-    var MEASUREWATTHOUR = 'm';
-    var CMD_ONOFF = 'o';
-    var PAGE_STATE = 'p';
-    var DATA_PVI = 'd';
-    var SAVE_SSID = 's';
-    var SAVE_IPADDR = 'i';
-    var SAVE_PASSWD = 'x';
-    var FW_VERSION = 'f';
-
-/*    var wsUriC = "ws://" + ipaddr + ":81";*/
-    var wsUriC = "ws://192.168.4.1:81";
-    var ws;
-    var pageState = 0;
-    var connected = 0;
-    var onoff = 1;
-    var setVolt;
-    var temperature = 0;
-    var humidity = 0;
-    var pressure = 0;
-    var altitude = 0;
-    var ssid = 0;
-    var ipaddr = 0;
-    var passwd = 0;
-
-    function wsConnectC() {
-        console.log("connect", wsUriC);
-        ws = new WebSocket(wsUriC);
-        ws.onmessage = function(msg) {
-            var data = msg.data;
-            console.log(msg.data);
-            switch (data.charAt(0)) {
-/*
-                case CMD_ONOFF:
-                    onoff = parseInt(data.substring(1));
-                    if (onoff) {
-                        $("#btn_onoff").val("off").slider("refresh");
-                        $("#sevenseg_pressure").sevenSeg({
-                            value: 0
-                        });
-                        $("#sevenseg_temperature").sevenSeg({
-                            value: 0
-                        });
-                        $("#sevenseg_humidity").sevenSeg({
-                            value: 0
-                        });
-                        $("#sevenseg_altitude").sevenSeg({
-                            value: 0
-                        });
-                        $("#btn_measure_watthour").val("start").slider("refresh");
-                        temperature = pressure = humidity = altitude = 0;
-                    } else if (!onoff) {
-                        $("#btn_onoff").val("on").slider("refresh");
-                    }
-                    break;
-                case SET_VOLTAGE:
-                    setVolt = parseFloat(data.substring(1));
-                    $("#slider_voltage").val(setVolt);
-                    $("#slider_voltage").slider('refresh');
-                    break;
-                case SET_AUTORUN:
-                    $('#checkbox-autorun').prop('checked', parseInt(data.charAt(1))).checkboxradio('refresh');
-                    break;
-                case SAVE_NETWORKS:
-                    networkInfo = data.substring(1).split(",");
-                    ssid = networkInfo[0];
-                    ipaddr = networkInfo[1];
-                    passwd = networkInfo[2];
-                    $("#tf_ssid").val(ssid).textinput("refresh");
-                    $("#tf_ipv4").val(ipaddr).textinput("refresh");
-                    $("#tf_passwd").val(passwd).textinput("refresh");
-                    break;
-                case DATA_PVI:
-                    dataInfo = data.substring(1).split(",");
-                    if (temperature != dataInfo[0]) {
-                        temperature = dataInfo[0];
-                        $("#sevenseg_temperature").sevenSeg({
-                            value: dataInfo[0]
-                        });
-                    }
-                    if (pressure != dataInfo[1]) {
-                        pressure = dataInfo[1];
-                        $("#sevenseg_pressure").sevenSeg({
-                            value: dataInfo[1]
-                        });
-                    }
-                    if (humidity != dataInfo[2]) {
-                        humidity = dataInfo[2];
-                        $("#sevenseg_humidity").sevenSeg({
-                            value: dataInfo[2]
-                        });
-                    }
-                    if (altitude != dataInfo[3]) {
-                        altitude = dataInfo[3];
-                        $("#sevenseg_altitude").sevenSeg({
-                            value: altitude
-                        });
-			if (altitude < 10) {
-				$("#sevenseg_altitude").sevenSeg({
-				digits: 4,
-				decimalPlaces: 3
-				});
-			} else if (altitude < 100) {
-				$("#sevenseg_altitude").sevenSeg({
-				digits: 4,
-				decimalPlaces: 2
-				});
-			} else if (altitude < 1000) {
-				$("#sevenseg_altitude").sevenSeg({
-				digits: 4,
-				decimalPlaces: 1
-				});
-			} else {
-				$("#sevenseg_altitude").sevenSeg({
-				digits: 4,
-				decimalPlaces: 0
-				});
-			}
-                    }
-                    break;
-                case MEASUREWATTHOUR:
-                    if (parseInt(data.substring(1))) {
-                        $("#btn_measure_watthour").val("stop").slider("refresh");
-                    } else {
-                        $("#btn_measure_watthour").val("start").slider("refresh");
-                    }
-                    break;
-		case FW_VERSION:
-		    $("#fwversion").html(data.substring(1));
-		    break;
-*/
-		}
-        }
-
-        ws.onopen = function() {
-            $("#label_connect").html("connected");
-            ws.send(PAGE_STATE + pageState);
-            connected = 1;
-        }
-
-        ws.onclose = function() {
-            $("#label_connect").html("not connected");
-            connected = 0;
-            setTimeout(wsConnectC, 1000);
-        }
-    }
-
-    function readSlider() {
-        setVolt = $("#slider_voltage").val();
-        ws.send(SET_VOLTAGE + setVolt);
-    }
-</script>
-
 <body onload="wsConnectC();" onunload="ws.disconnect;">
     <div data-role="page" id="navbar_home">
         <div data-role="header">
             <h1 class="ui-title" role="heading" aria-level="1">Weather Station</h1>
             <div class="ui-grid-c">
                 <div class="ui-block-a">
-                    <div style="margin:15px 0 0 10px;" id="label_connect">Not connected </div>
+                    <div style="margin:15px 0 0 10px;" id="label_connect">Not connected</div>
                 </div>
                 <div class="ui-block-b">
                 </div>
@@ -194,53 +36,85 @@
         </div>
 
         <div data-role="content">
-            <section style="float:left;">
+            <div class="ui-corner-all custom-cornors">
                 <div class="ui-grid-a">
                     <div class="ui-block-a">
-                        <div id="sevenseg_temperature" style="display: inline-block; width: 80%;">
+                        <div class="ui-bar ui-bar-a">
+                            <span class="sevenseg_label">Temperature</span>
+                            <span class="sevenseg_label_unit">&#8451;</span>
                         </div>
-                        <span style="color:red;font-size: 5vw; font-family: courier">&#8451;</span>
+                        <div class="ui-body ui-body-a">
+                            <div class="sevenseg_item" id="sevenseg_temperature"></div>
+                        </div>
                     </div>
                     <div class="ui-block-b">
-                        <div id="sevenseg_pressure" style="display: inline-block; width: 80%;">
+                        <div class="ui-bar ui-bar-a">
+                            <span class="sevenseg_label">Humidity</span>
+                            <span class="sevenseg_label_unit">%</span>
                         </div>
-                        <span style="color:red;font-size: 5vw; font-family: courier">hPa</span>
+                        <div class="ui-body ui-body-a">
+                            <div class="sevenseg_item" id="sevenseg_humidity"></div>
+                        </div>
                     </div>
+                </div>
+                <br />
+                <div class="ui-grid-a">
                     <div class="ui-block-a">
-                        <div id="sevenseg_humidity" style="display: inline-block; width: 80%;">
+                        <div class="ui-bar ui-bar-a">
+                            <span class="sevenseg_label">Pressure</span>
+                            <span class="sevenseg_label_unit">hPa</span>
                         </div>
-                        <span style="color:red;font-size: 5vw; font-family: courier">%</span>
+                        <div class="ui-body ui-body-a">
+                            <div class="sevenseg_item" id="sevenseg_pressure"></div>
+                        </div>
                     </div>
                     <div class="ui-block-b">
-                        <div id="sevenseg_altitude" style="display: inline-block; width: 80%;">
+                        <div class="ui-bar ui-bar-a">
+                            <span class="sevenseg_label">Altitude</span>
+                            <span class="sevenseg_label_unit">m</span>
                         </div>
-                        <span style="color:red;font-size: 5vw; font-family: courier">m</span>
+                        <div class="ui-body ui-body-a">
+                            <div class="sevenseg_item" id="sevenseg_altitude"></div>
+                        </div>
                     </div>
                 </div>
-            </section>
-
-            <section style="float:left; width:90%; padding:2%">
-                <select id="btn_onoff" data-role="slider">
-                    <option value="off">Off</option>
-                    <option value="on">On</option>
-                </select>
-
-                <select id="btn_measure_watthour" value="stop" data-role="slider">
-                    <option value="start">Stop</option>
-                    <option value="stop">Start</option>
-                </select>
-
-                <div>
-                    <label for="slider_voltage">Voltage slider:</label>
-                    <input type="range" id="slider_voltage" orientation="vertical" data-show-value="true" data-popup-enabled="true" value="0" min="4" max="5.3" step="0.1" onchange="readSlider()" />
-                    <input id="btn_save_voltage" value="Save Default Voltage" type="button">
+                <br />
+                <div class="ui-grid-a">
+                    <div class="ui-block-a">
+                        <div class="ui-bar ui-bar-a">
+                            <span class="sevenseg_label">UV index</span>
+                            <span class="sevenseg_label_unit"></span>
+                        </div>
+                        <div class="ui-body ui-body-a">
+                            <div class="sevenseg_item" id="sevenseg_uvindex"></div>
+                        </div>
+                    </div>
+                    <div class="ui-block-b">
+                        <div class="ui-bar ui-bar-a">
+                            <span class="sevenseg_label">Visible</span>
+                            <span class="sevenseg_label_unit">Lux</span>
+                        </div>
+                        <div class="ui-body ui-body-a">
+                            <div class="sevenseg_item" id="sevenseg_visible"></div>
+                        </div>
+                    </div>
                 </div>
-            </section>
-
-
+                <br />
+                <div class="ui-grid-a">
+                    <div class="ui-block-a">
+                        <div class="ui-bar ui-bar-a">
+                            <span class="sevenseg_label">IR</span>
+                            <span class="sevenseg_label_unit">Lux</span>
+                        </div>
+                        <div class="ui-body ui-body-a">
+                            <div class="sevenseg_item" id="sevenseg_ir"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div data-rol="footer" data-position="fixed">
+        <div data-role="footer" data-position="fixed">
             <div data-role="navbar">
                 <ul>
                     <li><a href="#navbar_home" data-icon="grid">Home</a>
@@ -254,16 +128,13 @@
 
     <div data-role="page" id="navbar_settings">
         <div data-role="header">
-            <h1 class="ui-title" role="heading" aria-level="1">Smart Power</h1>
+            <h1 class="ui-title" role="heading" aria-level="1">Weather Station</h1>
         </div>
 
         <div data-role="content">
-            <section>
-                <form>
-                    <p>Hardware settings</p>
-                    <input id="checkbox-autorun" data-mini="true" data-inline="true" type="checkbox">
-                    <label for="checkbox-autorun">Auto Run</label>
-                    <p>Network Settings</p>
+            <form>
+                <div class="ui-body ui-body-a ui-corner-all">
+                    <h3>Network Settings</h3>
                     <ul data-role="listview" data-inset="true">
                         <li class="ui-field-contain">
                             <label for="ssid">SSID:</label>
@@ -288,11 +159,11 @@
                             </fieldset>
                         </li>
                     </ul>
-                </form>
-            </section>
+                </div>
+            </form>
         </div>
 
-        <div data-rol="footer" data-position="fixed">
+        <div data-role="footer" data-position="fixed">
             <div data-role="navbar">
                 <ul>
                     <li><a href="#navbar_home" data-icon="grid">Home</a>
@@ -303,102 +174,5 @@
             </div>
         </div>
     </div>
-
-    <script>
-        $(function() {
-            $('#tf_ipv4').ipAddress();
-        });
-
-        $("#sevenseg_temperature").sevenSeg({
-            digits: 4,
-            decimalPlaces: 2
-        });
-        $("#sevenseg_pressure").sevenSeg({
-            digits: 5,
-            decimalPlaces: 1
-        });
-        $("#sevenseg_humidity").sevenSeg({
-            digits: 4,
-            decimalPlaces: 2
-        });
-        $("#sevenseg_altitude").sevenSeg({
-            digits: 4,
-            decimalPlaces: 1
-        });
-
-        $("#navbar_home").on("pagebeforeshow", function() {
-            pageState = 0;
-            if (connected) {
-                ws.send(PAGE_STATE + pageState);
-            }
-        });
-
-        $("#navbar_settings").on("pagebeforeshow", function() {
-            pageState = 1;
-            if (connected) {
-                ws.send(PAGE_STATE + pageState);
-            }
-        });
-
-        $("#btn_onoff").change(function() {
-            if ($("#btn_onoff").val() == "on") {
-                onoff = 0;
-                ws.send(CMD_ONOFF + onoff);
-            } else if ($("#btn_onoff").val() == "off") {
-                onoff = 1;
-                temperature = pressure = humidity = altitude = 0;
-                $("#sevenseg_pressure").sevenSeg({
-                    value: 0
-                });
-                $("#sevenseg_temperature").sevenSeg({
-                    value: 0
-                });
-                $("#sevenseg_humidity").sevenSeg({
-                    value: 0
-                });
-                $("#sevenseg_altitude").sevenSeg({
-                    value: 0
-                });
-                $("#btn_measure_watthour").val("start").slider("refresh");
-                ws.send(MEASUREWATTHOUR + "0");
-                ws.send(CMD_ONOFF + onoff);
-            }
-        });
-
-        $("#btn_measure_watthour").change(function() {
-            if ($("#btn_measure_watthour").val() == "start") {
-                ws.send(MEASUREWATTHOUR + "0");
-            } else if ($("#btn_measure_watthour").val() == "stop") {
-                ws.send(MEASUREWATTHOUR + "1");
-            }
-        });
-
-        $("#btn_save_voltage").click(function() {
-            ws.send(SET_DEFAULT_VOLTAGE);
-        });
-
-        $("#btn_save_network").click(function() {
-            ssid = $("#tf_ssid").val();
-            ipaddr = $("#tf_ipv4").val();
-            passwd = $("#tf_passwd").val();
-            ws.send(SAVE_NETWORKS + ssid + "," + ipaddr + "," + passwd);
-        });
-
-        $("#btn_reset_network").click(function() {
-            $("#tf_ssid").val("smartpower2").textinput("refresh");
-            $("#tf_ipv4").val("192.168.4.1").textinput("refresh");
-            $("#tf_passwd").val("12345678").textinput("refresh");
-        });
-
-
-        $("#checkbox-autorun").change(function() {
-            if ($("#checkbox-autorun").is(":checked")) {
-                ws.send(SET_AUTORUN + "1");
-            } else {
-                ws.send(SET_AUTORUN + "0");
-            }
-        });
-    </script>
 </body>
-
 </html>
