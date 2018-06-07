@@ -78,7 +78,7 @@ uint8_t Button::read(void)
     }
 }
 
-uint8_t Button::readAxis(uint8_t axis)
+uint8_t Button::readAxis()
 {
     static uint32_t ms;
     static uint8_t pinVal;
@@ -86,28 +86,19 @@ uint8_t Button::readAxis(uint8_t axis)
 
     ms = millis();
     val = analogRead(_pin);
-    if (axis == 1) {
-	if (val > 3900) {
-	    pinVal = 1;
-	    _axis = 1;
-	} else if ((val > 1600) && (val < 1800)) {
-	    pinVal = 1;
-	    _axis = 2;
-	} else {
-	    pinVal = 0;
-	}
-    } else if (axis == 0) {
-	if (val > 3900) {
-	    pinVal = 1;
-	    _axis = 3;
-	} else if ((val > 1600) && (val < 1800)) {
-	    pinVal = 1;
-	    _axis = 4;
-	} else {
-	    pinVal = 0;
-	}
+
+    if (val > 3900) {
+        pinVal = 1;
+        _axis = DPAD_V_FULL;
+    } else if (val > 1500 && val < 2000) {
+        pinVal = 1;
+        _axis = DPAD_V_HALF;
+    } else {
+        pinVal = 0;
+        _axis = DPAD_V_NONE;
     }
-    if (_invert != 0) pinVal = !pinVal;
+
+    if (_invert == 0) pinVal = !pinVal;
     if (ms - _lastChange < _dbTime) {
         _lastTime = _time;
         _time = ms;
@@ -142,6 +133,14 @@ uint8_t Button::isPressed(void)
     return _state == 0 ? 0 : 1;
 }
 
+uint8_t Button::isAxisPressed(void)
+{
+    if (_state)
+        return _axis;
+    else
+        return 0;
+}
+
 uint8_t Button::isReleased(void)
 {
     return _state == 0 ? 1 : 0;
@@ -158,10 +157,10 @@ uint8_t Button::wasPressed(void)
     return _state && _changed;
 }
 
-uint8_t Button::isAxisPressed(void)
+uint8_t Button::wasAxisPressed(void)
 {
     if (_state && _changed)
-	return _axis;
+        return _axis;
     else
         return 0;
 }
