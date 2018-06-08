@@ -1,8 +1,8 @@
-#include "utility/Adafruit_BMP085_U.h"
-#include "utility/Adafruit_BME280.h"
-#include "utility/Adafruit_Sensor.h"
-#include "utility/ODROID_Si1132.h"
-#include "utility/ODROID_Si70xx.h"
+#include "sensors/Adafruit_BMP085_U.h"
+#include "sensors/Adafruit_BME280.h"
+#include "sensors/Adafruit_Sensor.h"
+#include "sensors/ODROID_Si1132.h"
+#include "sensors/ODROID_Si70xx.h"
 
 #include "Arduino.h"
 
