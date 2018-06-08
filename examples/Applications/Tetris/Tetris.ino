@@ -110,9 +110,9 @@ bool KeyPadLoop(){
   uint8_t state_x = GO.JOY_X.isAxisPressed();
   if(state_x) {
     ClearKeys();
-    if (state_x == 1)
+    if (state_x == 2)
         but_LEFT = true;
-    else if (state_x == 2)
+    else if (state_x == 1)
         but_RIGHT = true;
     return true;
   }
