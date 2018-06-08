@@ -20,7 +20,6 @@ void ODROID_GO::begin() {
     pinMode(BUTTON_VOLUME, INPUT_PULLUP);
     pinMode(BUTTON_JOY_Y, INPUT_PULLDOWN);
     pinMode(BUTTON_JOY_X, INPUT_PULLDOWN);
-    pinMode(25, INPUT_PULLUP);
 
     // I2C
     /*

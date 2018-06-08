@@ -8,6 +8,8 @@ void SPEAKER::begin() {
     ledcSetup(TONE_PIN_CHANNEL, 0, 13);
     ledcAttachPin(SPEAKER_PIN, TONE_PIN_CHANNEL);
     // digitalWrite(SPEAKER_PIN, 0);
+    pinMode(25, OUTPUT);
+    digitalWrite(25, HIGH);
     setBeep(1000, 100);
 }
 
