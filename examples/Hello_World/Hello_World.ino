@@ -4,7 +4,7 @@ void setup() {
   // put your setup code here, to run once:
   GO.begin();
  
-  GO.lcd.setTextFont(4);
+  GO.lcd.setTextSize(2);
   GO.lcd.print("Hello, ODROID-GO");
 }
  
