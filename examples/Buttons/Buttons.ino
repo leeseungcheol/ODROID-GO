@@ -3,7 +3,7 @@
 void setup() {
   // put your setup code here, to run once:
   GO.begin();
-  GO.lcd.setTextFont(2);
+  GO.lcd.setTextSize(2);
 }
 
 void displayButtons() {
