@@ -1,6 +1,6 @@
-#include "Weather_Board.h"
+#include "WeatherBoard.h"
 
-uint8_t Weather_Board::begin(void)
+uint8_t WeatherBoard::begin(void)
 {
     revision = 0;
     // Check board version
@@ -10,7 +10,7 @@ uint8_t Weather_Board::begin(void)
         bme.begin();
         si1132.begin();
     }
-    
+
     //Wire.beginTransmission((byte)BMP085_REGISTER_CHIPID);
     Wire.beginTransmission(119);
     if (Wire.endTransmission() == 0) {
@@ -23,7 +23,7 @@ uint8_t Weather_Board::begin(void)
     return revision;
 }
 
-uint8_t Weather_Board::read8(byte _i2caddr, byte reg)
+uint8_t WeatherBoard::read8(byte _i2caddr, byte reg)
 {
     byte value;
     Wire.beginTransmission((uint8_t)_i2caddr);
@@ -32,11 +32,11 @@ uint8_t Weather_Board::read8(byte _i2caddr, byte reg)
     Wire.requestFrom((uint8_t)_i2caddr, (byte)1);
     value = Wire.read();
     Wire.endTransmission();
+
     return value;
 }
-void Weather_Board::getBMP180()
+void WeatherBoard::getBMP180()
 {
-
     sensors_event_t event;
     bmp.getEvent(&event);
 
@@ -47,9 +47,8 @@ void Weather_Board::getBMP180()
     }
 }
 
-void Weather_Board::getSi1132()
+void WeatherBoard::getSi1132()
 {
-
     Si1132UVIndex = 0;
     Si1132Visible = 0;
     Si1132IR = 0;
@@ -62,25 +61,23 @@ void Weather_Board::getSi1132()
     Si1132UVIndex /= 100;
     Si1132Visible /= 10;
     Si1132IR /= 10;
-
 }
 
-void Weather_Board::getSi7020()
+void WeatherBoard::getSi7020()
 {
-
     Si7020Temperature = si7020.readTemperature();
     Si7020Humidity = si7020.readHumidity();
-
 }
 
-void Weather_Board::getBME280(void)
+void WeatherBoard::getBME280(void)
 {
     BME280Temperature = bme.readTemperature();
     BME280Pressure = (bme.readPressure() / 100);
     BME280Humidity = bme.readHumidity();
     BME280Altitude = bme.readAltitude(SEALEVELPRESSURE_HPA);
 }
-void Weather_Board::errorCheck()
+
+void WeatherBoard::errorCheck()
 {
     if ((read8(BME280_ADDRESS, BME280_REGISTER_CHIPID) != 0x60) &&
             (read8(BMP085_ADDRESS, BMP085_REGISTER_CHIPID) != 0x55)) {
@@ -95,9 +92,8 @@ void Weather_Board::errorCheck()
         } else {
             revision = 2;
         }
-        
         //si1132.begin();
-        
+
         if (revision == 1) {
             bmp.begin();
             sensor_t sensor;
@@ -127,7 +123,5 @@ void Weather_Board::errorCheck()
         Si1132Visible = 0;
         Si1132IR = 0;
     }
-
 }
-
 

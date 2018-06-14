@@ -1,591 +1,506 @@
 #include <odroid_go.h>
+#include <Wire.h>
 #include <WiFi.h>
-#include <WebSocketsServer.h>
-#include <WebServer.h>
 #include <FS.h>
 #include <SPIFFS.h>
+#include <WebSocketsServer.h>
+#include <WebServer.h>
 #include <SimpleTimer.h>
-#include "Weather_Board.h"
-#include <Wire.h>
+#include "WeatherBoard.h"
 
-// These are the pins used for the UNO
-// for Due/Mega/Leonardo use the hardware SPI pins (which are different)
+const double FW_VERSION = 1.0;
+const String CHIP_ID = String((uint16_t)(ESP.getEfuseMac() >> 32), HEX);
 
-#define DBG_OUTPUT_PORT Serial
-#define FwVersion   1.0
+const int PIN_STATUS_LED = 2;
+const int PIN_DAC_SD = 25;
+const int PIN_I2C_SDA = 15;
+const int PIN_I2C_SCL = 4;
 
-File fsUploadFile;
+const char SGN_SAVE_NET_CONFIGS = 'n';
+const char SGN_PAGE_STATE = 'p';
+const char SGN_DATA_PVI = 'd';
+const char SGN_FW_VERSION = 'f';
 
-char ssid[20];
-char password[20];
-WebServer *server;
-WebSocketsServer webSocket = WebSocketsServer(81);
-IPAddress ip = IPAddress(192, 168, 4, 1);
+const char *DEFAULT_IP = "192.168.4.1";
+const char *DEFAULT_AP_SSID_PREFIX = "ODROID_GO_";
+const char *DEFAULT_AP_PASSWD = "12345678";
 
-#define SET_DEFAULT_VOLTAGE 'v'
-#define SET_VOLTAGE         'w'
-#define SAVE_NETWORKS       'n'
-#define CMD_ONOFF           'o'
-#define SET_AUTORUN         'a'
-#define PAGE_STATE          'p'
-#define DATA_PVI            'd'
-#define MEASUREWATTHOUR     'm'
-#define FW_VERSION          'f'
+const int DEFAULT_WEBSERVER_PORT = 80;
+const int DEFAULT_WEBSOCKET_PORT = 81;
 
-#define LED_BLUE 2
-uint8_t onoff;
+// 180611: Proceed without implementing network configuration for now.
+const char *CONFIGS_PATH = "/go_setup/network_configs.txt";
 
-uint8_t connectedWeb;
+char apSsid[20];
+char apPasswd[20];
+IPAddress ip;
 
-uint8_t ledPin = 5;
-uint8_t pwm = 255;
-uint8_t textSize = 2;
-uint8_t rotation = 1;
-
-float battery = 0;
-float oldBattery;
-uint8_t batteryCnt;
-uint8_t batteryState;
-uint8_t count;
-
-uint16_t foregroundColor, backgroundColor;
-
-unsigned char errorState;
-unsigned int ipaddr[4];
-
+WebServer *webServer;
+WebSocketsServer webSocket = WebSocketsServer(DEFAULT_WEBSOCKET_PORT);
 SimpleTimer timer;
-Weather_Board wb;
+WeatherBoard weatherBoard;
 
-struct client_go {
-  uint8_t connected;
-  uint8_t page;
-};
+uint8_t statusLed = LOW;
+bool isConnected = false;
+uint16_t backgroundColor;
 
-struct client_go client_go[5];
+struct socketClients {
+    bool isConnected;
+    uint8_t page;
+} socketClients[5];
 
-void wifi_connection_status(void)
-{
-  if (WiFi.softAPgetStationNum() > 0) {
-    if (connectedWeb) {
-      onoff = !onoff;
+void displayLabels() {
+    GO.lcd.setCharCursor(0, 1);
+    GO.lcd.setTextColor(TFT_GREEN, backgroundColor);
+    GO.lcd.println("Si1132");
+    GO.lcd.setTextColor(TFT_MAGENTA, backgroundColor);
+    GO.lcd.println("UV Index : ");
+    GO.lcd.println("Visible :");
+    GO.lcd.println("IR :");
+
+    if (weatherBoard.revision == 1) {
+        GO.lcd.setCharCursor(0, 6);
+        GO.lcd.setTextColor(TFT_GREEN, backgroundColor);
+        GO.lcd.println("Si7020");
+        GO.lcd.setTextColor(TFT_MAGENTA, backgroundColor);
+        GO.lcd.println("Temp : ");
+        GO.lcd.println("Humidity :");
+        GO.lcd.setCharCursor(0, 10);
+        GO.lcd.setTextColor(TFT_GREEN, backgroundColor);
+        GO.lcd.println("BMP180");
+        GO.lcd.setTextColor(TFT_MAGENTA, backgroundColor);
+        GO.lcd.println("Temp : ");
+        GO.lcd.println("Pressure :");
+        GO.lcd.println("Altitude :");
+    } else if (weatherBoard.revision == 2) {
+        GO.lcd.setCharCursor(0, 6);
+        GO.lcd.setTextColor(TFT_GREEN, backgroundColor);
+        GO.lcd.setTextColor(TFT_GREEN, backgroundColor);
+        GO.lcd.println("BME280");
+        GO.lcd.setTextColor(TFT_MAGENTA, backgroundColor);
+        GO.lcd.println("Temp : ");
+        GO.lcd.println("Pressure :");
+        GO.lcd.println("Humidity :");
+        GO.lcd.println("Altitude :");
+    }
+}
+
+void displayBMP180() {
+    GO.lcd.setTextColor(TFT_CYAN, backgroundColor);
+    GO.lcd.setCharCursor(7, 11);
+    GO.lcd.print(weatherBoard.BMP180Temperature);
+    GO.lcd.println(" *C  ");
+    delay(20);
+
+    GO.lcd.setCharCursor(11, 12);
+    GO.lcd.print(weatherBoard.BMP180Pressure);
+    GO.lcd.println(" Pa  ");
+    delay(20);
+
+    GO.lcd.setCharCursor(11, 13);
+    GO.lcd.print(weatherBoard.BMP180Altitude);
+    GO.lcd.println(" meters   ");
+    delay(20);
+}
+
+void displaySi7020() {
+    GO.lcd.setTextColor(TFT_YELLOW, backgroundColor);
+    GO.lcd.setCharCursor(7, 7);
+    GO.lcd.print(weatherBoard.Si7020Temperature);
+    GO.lcd.println(" *C  ");
+    delay(20);
+
+    GO.lcd.setCharCursor(11, 8);
+    GO.lcd.print(weatherBoard.Si7020Humidity);
+    GO.lcd.println(" %  \n");
+    delay(20);
+}
+
+void displaySi1132() {
+    GO.lcd.setTextColor(TFT_RED, backgroundColor);
+    GO.lcd.setCharCursor(11, 2);
+    GO.lcd.print(weatherBoard.Si1132UVIndex);
+    GO.lcd.println("  ");
+    delay(20);
+
+    GO.lcd.setCharCursor(10, 3);
+    GO.lcd.print(weatherBoard.Si1132Visible);
+    GO.lcd.println(" Lux  ");
+    delay(20);
+
+    GO.lcd.setCharCursor(5, 4);
+    GO.lcd.print(weatherBoard.Si1132IR);
+    GO.lcd.println(" Lux  \n");
+    delay(20);
+}
+
+void displayBME280() {
+    GO.lcd.setTextColor(TFT_CYAN, backgroundColor);
+    GO.lcd.setCharCursor(7, 7);
+    GO.lcd.print(weatherBoard.BME280Temperature);
+    GO.lcd.println(" *C  ");
+    delay(20);
+
+    GO.lcd.setCharCursor(11, 8);
+    GO.lcd.print(weatherBoard.BME280Pressure);
+    GO.lcd.println(" hPa  ");
+    delay(20);
+
+    GO.lcd.setCharCursor(11, 9);
+    GO.lcd.print(weatherBoard.BME280Humidity);
+    GO.lcd.println(" %   ");
+    delay(20);
+
+    GO.lcd.setCharCursor(11, 10);
+    GO.lcd.print(weatherBoard.BME280Altitude);
+    GO.lcd.println(" m   ");
+    delay(20);
+}
+
+void setup() {
+    GO.begin();
+    GO.lcd.setTextSize(2);
+
+    Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
+
+    pinMode(PIN_STATUS_LED, OUTPUT);
+    digitalWrite(PIN_STATUS_LED, LOW);
+
+    pinMode(PIN_DAC_SD, OUTPUT);
+    digitalWrite(PIN_DAC_SD, LOW);
+
+    Serial.print("WeatherBoard Revision: ");
+    Serial.println(weatherBoard.begin());
+
+    for (uint8_t t = 3; t > 0; t--) {
+        Serial.printf("[SETUP] BOOT WAIT %d...\r\n", t);
+        Serial.flush();
+        delay(1000);
+    }
+
+    if (SPIFFS.begin() && listSPIFFS(SPIFFS, "/", 0)) {
+        readNetworkConfigs();
+
+        initWifi();
+        initWebServer();
+        initWebSocket();
+
+        timer.setInterval(1000, weatherStationMainHandler);
+        displayLabels();
     } else {
-      onoff = HIGH;
+        Serial.println("SPIFFS mount failed.");
     }
-  } else {
-    onoff = LOW;
-  }
-  digitalWrite(LED_BLUE, onoff);
+}
 
-  for (int i = 0; i < 5; i++) {
-    if (client_go[i].connected) {
-      connectedWeb = 1;
-      break;
+void readNetworkConfigs() {
+    Serial.println("/* Network Configuration */");
+
+    File f;
+
+    if (!SPIFFS.exists(CONFIGS_PATH)) {
+        Serial.println("Configuration file not found. Trying to create a new file.");
+
+        f = SPIFFS.open(CONFIGS_PATH, "w");
+
+        f.println("ipaddr=\"" + String(DEFAULT_IP) + "\"");
+        f.println("ssid=\"" + String(DEFAULT_AP_SSID_PREFIX) + CHIP_ID + "\"");
+        f.println("passwd=\"" + String(DEFAULT_AP_PASSWD) + "\"");
+
+        f.flush();
+        f.close();
+
+        if (SPIFFS.exists(CONFIGS_PATH)) {
+            Serial.println("Configuration file created.");
+        } else {
+            Serial.println("File creation failed.");
+            return;
+        }
     }
-  }
-}
 
-void setup()
-{
-  GO.begin();
-  GO.lcd.setTextSize(2);
-  Serial.print("revision :");
-  Serial.println(wb.begin());
+    f = SPIFFS.open(CONFIGS_PATH, "r");
+    int readIp[4];
 
+    if (!f) {
+        Serial.println("File open failed.");
 
-  Wire.begin(15, 4);
-
-  for (uint8_t t = 3; t > 0; t--) {
-    Serial.printf("[SETUP] BOOT WAIT %d...\n\r", t);
-    Serial.flush();
-    delay(1000);
-  }
-
-  pinMode(LED_BLUE, OUTPUT);
-  digitalWrite(LED_BLUE, LOW);
-  pinMode(25, OUTPUT);
-  digitalWrite(25, LOW);
-
-  SPIFFS.begin();
-  {
-    listDir(SPIFFS, "/", 0);
-  }
-
-  initODROID_GO();
-
-  webserver_init();
-
-  timer.setInterval(1000, handler);
-  displayLabel();
-}
-
-void handler(void)
-{
-  wifi_connection_status();
-  if (connectedWeb) {
-    String data = String(DATA_PVI);
-    data += String(wb.BME280Temperature, 2) + "," + String(wb.BME280Pressure, 1) + "," + String(wb.BME280Humidity, 2) + "," + String(wb.BME280Altitude, 2);
-    data += "," + String(wb.Si1132UVIndex, 2) + "," + String(wb.Si1132Visible) + "," + String(wb.Si1132IR);
-    send_data_to_clients(data, 0);
-    Serial.println(data);
-  }
-
-  wb.getSi1132();
-  if (wb.revision == 1) {
-    wb.getBMP180();
-    wb.getSi7020();
-  } else if (wb.revision == 2) {
-    wb.getBME280();
-  }
-
-  displaySi1132();
-  if (wb.revision == 1) {
-    displayBMP180();
-    displaySi7020();
-  } else if (wb.revision == 2) {
-    displayBME280();
-  }
-  //available_sensors();
-}
-
-bool available_sensors()
-{
-  byte count = 0;
-  for (byte i = 1; i < 128; i++) {
-    Wire.beginTransmission(i);
-    if (Wire.endTransmission() == 0)
-    {
-      Serial.print ("Found address: ");
-      Serial.print (i, DEC);
-      Serial.print (" (0x");
-      Serial.print (i, HEX);
-      Serial.println (")");
-      count++;
+        return;
     }
-    delay(5);
-  }
-  if (count > 0) {
-    Serial.println("I2C available!");
-  } else {
-    Serial.println("I2C not available!");
-  }
+
+    f.findUntil("ipaddr", "\r\n");
+    f.seek(2, SeekCur);
+    readIp[0] = f.readStringUntil('.').toInt();
+    readIp[1] = f.readStringUntil('.').toInt();
+    readIp[2] = f.readStringUntil('.').toInt();
+    readIp[3] = f.readStringUntil('"').toInt();
+    ip = IPAddress(readIp[0], readIp[1], readIp[2], readIp[3]);
+
+    f.findUntil("ssid", "\r\n");
+    f.seek(6, SeekCur);
+    f.readStringUntil('"').toCharArray(apSsid, 20);
+
+    f.findUntil("passwd", "\r\n");
+    f.seek(8, SeekCur);
+    f.readStringUntil('"').toCharArray(apPasswd, 20);
+    f.close();
+
+    Serial.print("IP: ");
+    Serial.println(ip);
+    Serial.print("SSID: ");
+    Serial.println(apSsid);
+    Serial.print("Password: ");
+    Serial.println(apPasswd);
 }
 
-void loop(void)
-{
+void initWifi() {
+    Serial.println("/* Initializing WiFi */");
 
-  server->handleClient();
+    IPAddress gateway(ip[0], ip[1], ip[2], ip[3]);
+    IPAddress subnet(255, 255, 255, 0);
 
-  webSocket.loop();
-  timer.run();
-
-  GO.update();
+    WiFi.softAPConfig(ip, gateway, subnet);
+    if (WiFi.softAP(apSsid, apPasswd)) {
+        Serial.println("WiFi initilized.");
+    } else {
+        Serial.println("WiFi initilizing failed.");
+    }
 }
 
-void initODROID_GO(void)
-{
-  if (isFirstBoot()) {
-    Serial.println("init fs!!");
-    fs_init();
-  } else {
-    readNetworkConfig();
-  }
+void initWebServer() {
+    Serial.println("/* Initializing Web Server */");
+    webServer = new WebServer(DEFAULT_WEBSERVER_PORT);
+    webServer->on("/list", HTTP_GET, webServerFileListHandler);
+    webServer->onNotFound([]() {
+        if (!webServerFileReadHandler(webServer->uri()))
+            webServer->send(404, "text/plain", "FileNotFound");
+    });
+    webServer->begin();
+
+    Serial.println("Web server initilized.");
 }
 
-void fs_init(void)
-{
-  uint64_t chipid;
-  chipid = ESP.getEfuseMac();
-  String ssidTemp = "ssid=\"ODROID_GO_" + String((uint16_t)(chipid >> 32), HEX) + "\"";
+void webServerFileListHandler() {
+    if (!webServer->hasArg("dir")) {
+        webServerReturnFail("BAD ARGS");
+        return;
+    }
+    String path = webServer->arg("dir");
+    if (path != "/" && !SPIFFS.exists((char *)path.c_str())) {
+        webServerReturnFail("BAD PATH");
+        return;
+    }
+    File dir = SPIFFS.open((char *)path.c_str());
+    path = String();
+    if (!dir.isDirectory()) {
+        dir.close();
+        webServerReturnFail("NOT DIR");
+        return;
+    }
+    dir.rewindDirectory();
 
-  File f = SPIFFS.open("/js/settings.js", "w");
-  f.println(ssidTemp.c_str());
-  f.println("ipaddr=\"192.168.4.1\"");
-  f.println("passwd=\"12345678\"");
-  f.flush();
-  f.close();
-  readNetworkConfig();
-}
+    String output = "[";
+    for (int cnt = 0; true; ++cnt) {
+        File entry = dir.openNextFile();
+        if (!entry)
+            break;
 
-void handleClientData(uint8_t num, String data)
-{
-  Serial.println(data);
-  switch (data.charAt(0)) {
-    case PAGE_STATE:
-      client_go[num].page = data.charAt(1) - 48;
-      sendStatus(num, data.charAt(1) - 48);
-      break;
-  }
-}
+        if (cnt > 0)
+            output += ',';
 
-bool isFirstBoot()
-{
-  File f = SPIFFS.open("/txt/settings.txt", "r");
-
-  f.seek(0, SeekSet);
-  f.findUntil("firstboot", "\n\r");
-  f.seek(1, SeekCur);
-  int value = f.readStringUntil('\n').toInt();
-
-  bool result;
-  if (value)
-  {
-    result = true;
-  }
-  else
-  {
-    result = false;
-  }
-
-  f.close();
-
-  return result;
-}
-
-void readNetworkConfig(void)
-{
-  File f = SPIFFS.open("/js/settings.js", "r");
-
-  f.findUntil("ssid", "\n\r");
-
-  f.seek(2, SeekCur);
-  f.readStringUntil('"').toCharArray(ssid, 20);
-  Serial.print("ssid ? :");
-  Serial.println(ssid);
-
-  f.findUntil("ipaddr", "\n\r");
-  f.seek(2, SeekCur);
-  ipaddr[0] = f.readStringUntil('.').toInt();
-  ipaddr[1] = f.readStringUntil('.').toInt();
-  ipaddr[2] = f.readStringUntil('.').toInt();
-  ipaddr[3] = f.readStringUntil('"').toInt();
-  //ip = IPAddress(ipaddr[0], ipaddr[1], ipaddr[2], ipaddr[3]);
-  ip = IPAddress(192, 168, 4, 1);
-  server = new WebServer(80);
-
-  f.findUntil("passwd", "\n\r");
-  f.seek(2, SeekCur);
-  f.readStringUntil('"').toCharArray(password, 20);
-  f.close();
-}
-
-void webserver_init(void)
-{
-  IPAddress gateway(ip[0], ip[1], ip[2], ip[3]);
-  IPAddress subnet(255, 255, 255, 0);
-  WiFi.softAPConfig(ip, gateway, subnet);
-
-  WiFi.softAP(ssid, password);
-  Serial.println("");
-  Serial.print("Connected! IP address: ");
-  Serial.println(WiFi.softAPIP());
-
-  webSocket.begin();
-  webSocket.onEvent(webSocketEvent);
-
-  server->on("/list", HTTP_GET, handleFileList);
-
-  server->onNotFound([]() {
-    if (!handleFileRead(server->uri()))
-      server->send(404, "text/plain", "FileNotFound");
-  });
-  server->begin();
-}
-
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght) {
-  switch (type) {
-    case WStype_DISCONNECTED :
-      Serial.printf("[%u] Disconnected!\n\r", num);
-      client_go[num].connected = 0;
-      //connectedWeb = 0;
-      break;
-    case WStype_CONNECTED : {
-        IPAddress ip = webSocket.remoteIP(num);
-        Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n\r",
-                      num, ip[0], ip[1], ip[2], ip[3], payload);
-        client_go[num].connected = 1;
-        //connectedWeb = 1;
-        break;
-      }
-    case WStype_TEXT : {
-        handleClientData(num, String((char *)&payload[0]));
-        break;
-      }
-    case WStype_BIN :
-      Serial.printf("[%u] get binary lenght: %u\n\r", num, lenght);
-      //            hexdump(payload, lenght);
-      break;
-  }
-}
-
-void sendStatus(uint8_t num, uint8_t page)
-{
-  if (!page) {
-    webSocket.sendTXT(num, String(FW_VERSION) + FwVersion);
-  } else if (page) {
-    webSocket.sendTXT(num, String(SAVE_NETWORKS) + String(ssid) + "," + ip.toString() + "," + String(password));
-  }
-}
-
-void send_data_to_clients(String str, uint8_t page)
-{
-  for (int i = 0; i < 5; i++) {
-    if (client_go[i].connected && (client_go[i].page == page))
-      webSocket.sendTXT(i, str);
-  }
-}
-
-void displayLabel()
-{
-  GO.lcd.setCharCursor(0, 1);
-  GO.lcd.setTextColor(TFT_GREEN, backgroundColor);
-  GO.lcd.println("Si1132");
-  GO.lcd.setTextColor(TFT_MAGENTA, backgroundColor);
-  GO.lcd.println("UV Index : ");
-  GO.lcd.println("Visible :");
-  GO.lcd.println("IR :");
-
-  if (wb.revision == 1) {
-    GO.lcd.setCharCursor(0, 6);
-    GO.lcd.setTextColor(TFT_GREEN, backgroundColor);
-    GO.lcd.println("Si7020");
-    GO.lcd.setTextColor(TFT_MAGENTA, backgroundColor);
-    GO.lcd.println("Temp : ");
-    GO.lcd.println("Humidity :");
-    GO.lcd.setCharCursor(0, 10);
-    GO.lcd.setTextColor(TFT_GREEN, backgroundColor);
-    GO.lcd.println("BMP180");
-    GO.lcd.setTextColor(TFT_MAGENTA, backgroundColor);
-    GO.lcd.println("Temp : ");
-    GO.lcd.println("Pressure :");
-    GO.lcd.println("Altitude :");
-  } else if (wb.revision == 2) {
-    GO.lcd.setCharCursor(0, 6);
-    GO.lcd.setTextColor(TFT_GREEN, backgroundColor);
-    GO.lcd.setTextColor(TFT_GREEN, backgroundColor);
-    GO.lcd.println("BME280");
-    GO.lcd.setTextColor(TFT_MAGENTA, backgroundColor);
-    GO.lcd.println("Temp : ");
-    GO.lcd.println("Pressure :");
-    GO.lcd.println("Humidity :");
-    GO.lcd.println("Altitude :");
-  }
-
-}
-
-void displayBMP180()
-{
-  GO.lcd.setTextColor(TFT_CYAN, backgroundColor);
-  GO.lcd.setCharCursor(7, 11);
-  GO.lcd.print(wb.BMP180Temperature);
-  GO.lcd.println(" *C  ");
-  delay(20);
-
-  GO.lcd.setCharCursor(11, 12);
-  GO.lcd.print(wb.BMP180Pressure);
-  GO.lcd.println(" Pa  ");
-  delay(20);
-
-  GO.lcd.setCharCursor(11, 13);
-  GO.lcd.print(wb.BMP180Altitude);
-  GO.lcd.println(" meters   ");
-  delay(20);
-}
-
-void displaySi7020()
-{
-  GO.lcd.setTextColor(TFT_YELLOW, backgroundColor);
-  GO.lcd.setCharCursor(7, 7);
-  GO.lcd.print(wb.Si7020Temperature);
-  GO.lcd.println(" *C  ");
-  delay(20);
-
-  GO.lcd.setCharCursor(11, 8);
-  GO.lcd.print(wb.Si7020Humidity);
-  GO.lcd.println(" %  \n");
-  delay(20);
-}
-
-void displaySi1132()
-{
-  GO.lcd.setTextColor(TFT_RED, backgroundColor);
-  GO.lcd.setCharCursor(11, 2);
-  GO.lcd.print(wb.Si1132UVIndex);
-  GO.lcd.println("  ");
-  delay(20);
-
-  GO.lcd.setCharCursor(10, 3);
-  GO.lcd.print(wb.Si1132Visible);
-  GO.lcd.println(" Lux  ");
-  delay(20);
-
-  GO.lcd.setCharCursor(5, 4);
-  GO.lcd.print(wb.Si1132IR);
-  GO.lcd.println(" Lux  \n");
-  delay(20);
-}
-
-void displayBME280()
-{
-  GO.lcd.setTextColor(TFT_CYAN, backgroundColor);
-  GO.lcd.setCharCursor(7, 7);
-  GO.lcd.print(wb.BME280Temperature);
-  GO.lcd.println(" *C  ");
-  delay(20);
-
-  GO.lcd.setCharCursor(11, 8);
-  GO.lcd.print(wb.BME280Pressure);
-  GO.lcd.println(" hPa  ");
-  delay(20);
-
-  GO.lcd.setCharCursor(11, 9);
-  GO.lcd.print(wb.BME280Humidity);
-  GO.lcd.println(" %   ");
-  delay(20);
-
-  GO.lcd.setCharCursor(11, 10);
-  GO.lcd.print(wb.BME280Altitude);
-  GO.lcd.println(" m   ");
-  delay(20);
-}
-
-String formatBytes(size_t bytes) {
-  if (bytes < 1024) {
-    return String(bytes) + "B";
-  } else if (bytes < (1024 * 1024)) {
-    return String(bytes / 1024.0) + "KB";
-  } else if (bytes < (1024 * 1024 * 1024)) {
-    return String(bytes / 1024.0 / 1024.0) + "MB";
-  } else {
-    return String(bytes / 1024.0 / 1024.0 / 1024.0) + "GB";
-  }
-}
-
-String getContentType(String filename) {
-  if (server->hasArg("download")) return "application/octet-stream";
-  else if (filename.endsWith(".htm")) return "text/html";
-  else if (filename.endsWith(".html")) return "text/html";
-  else if (filename.endsWith(".css")) return "text/css";
-  else if (filename.endsWith(".js")) return "application/javascript";
-  else if (filename.endsWith(".png")) return "image/png";
-  else if (filename.endsWith(".gif")) return "image/gif";
-  else if (filename.endsWith(".jpg")) return "image/jpeg";
-  else if (filename.endsWith(".ico")) return "image/x-icon";
-  else if (filename.endsWith(".xml")) return "text/xml";
-  else if (filename.endsWith(".pdf")) return "application/x-pdf";
-  else if (filename.endsWith(".zip")) return "application/x-zip";
-  else if (filename.endsWith(".gz")) return "application/x-gzip";
-  return "text/plain";
-}
-
-bool handleFileRead(String path) {
-  DBG_OUTPUT_PORT.println("handleFileRead: " + path);
-  if (path.endsWith("/")) path += "index.html";
-  String contentType = getContentType(path);
-  String pathWithGz = path + ".gz";
-  if (SPIFFS.exists(pathWithGz) || SPIFFS.exists(path)) {
-    if (SPIFFS.exists(pathWithGz))
-      path += ".gz";
-    File file = SPIFFS.open(path, "r");
-    size_t sent = server->streamFile(file, contentType);
-    file.close();
-    return true;
-  }
-  return false;
-}
-
-void handleFileUpload() {
-  if (server->uri() != "/edit") return;
-  HTTPUpload& upload = server->upload();
-  if (upload.status == UPLOAD_FILE_START) {
-    String filename = upload.filename;
-    if (!filename.startsWith("/")) filename = "/" + filename;
-    DBG_OUTPUT_PORT.print("handleFileUpload Name: "); DBG_OUTPUT_PORT.println(filename);
-    fsUploadFile = SPIFFS.open(filename, "w");
-    filename = String();
-  } else if (upload.status == UPLOAD_FILE_WRITE) {
-    //DBG_OUTPUT_PORT.print("handleFileUpload Data: "); DBG_OUTPUT_PORT.println(upload.currentSize);
-    if (fsUploadFile)
-      fsUploadFile.write(upload.buf, upload.currentSize);
-  } else if (upload.status == UPLOAD_FILE_END) {
-    if (fsUploadFile)
-      fsUploadFile.close();
-    DBG_OUTPUT_PORT.print("handleFileUpload Size: "); DBG_OUTPUT_PORT.println(upload.totalSize);
-  }
-}
-
-void returnFail(String msg) {
-  server->send(500, "text/plain", msg + "\r\n");
-}
-
-void handleFileList() {
-  if (!server->hasArg("dir")) {
-    returnFail("BAD ARGS");
-    return;
-  }
-  String path = server->arg("dir");
-  if (path != "/" && !SPIFFS.exists((char *)path.c_str())) {
-    returnFail("BAD PATH");
-    return;
-  }
-  File dir = SPIFFS.open((char *)path.c_str());
-  path = String();
-  if (!dir.isDirectory()) {
+        output += "{\"type\":\"";
+        output += (entry.isDirectory()) ? "dir" : "file";
+        output += "\",\"name\":\"";
+        // Ignore '/' prefix
+        output += entry.name() + 1;
+        output += "\"";
+        output += "}";
+        entry.close();
+    }
+    output += "]";
+    webServer->send(200, "text/json", output);
     dir.close();
-    returnFail("NOT DIR");
-    return;
-  }
-  dir.rewindDirectory();
-
-  String output = "[";
-  for (int cnt = 0; true; ++cnt) {
-    File entry = dir.openNextFile();
-    if (!entry)
-      break;
-
-    if (cnt > 0)
-      output += ',';
-
-    output += "{\"type\":\"";
-    output += (entry.isDirectory()) ? "dir" : "file";
-    output += "\",\"name\":\"";
-    // Ignore '/' prefix
-    output += entry.name() + 1;
-    output += "\"";
-    output += "}";
-    entry.close();
-  }
-  output += "]";
-  server->send(200, "text/json", output);
-  dir.close();
 }
 
-void listDir(fs::FS &fs, const char * dirname, uint8_t levels) {
-  DBG_OUTPUT_PORT.printf("Listing directory: %s\n", dirname);
+bool webServerFileReadHandler(String path) {
+    if (path.endsWith("/")) path += "index.html";
 
-  File root = fs.open(dirname);
-  if (!root) {
-    DBG_OUTPUT_PORT.println("Failed to open directory");
-    return;
-  }
-  if (!root.isDirectory()) {
-    DBG_OUTPUT_PORT.println("Not a directory");
-    return;
-  }
+    String contentType = webServerGetContentType(path);
+    String pathWithGz = path + ".gz";
 
-  File file = root.openNextFile();
-  while (file) {
-    if (file.isDirectory()) {
-      DBG_OUTPUT_PORT.print("  DIR : ");
-      DBG_OUTPUT_PORT.println(file.name());
-      if (levels) {
-        listDir(fs, file.name(), levels - 1);
-      }
-    } else {
-      DBG_OUTPUT_PORT.print("  FILE: ");
-      DBG_OUTPUT_PORT.print(file.name());
-      DBG_OUTPUT_PORT.print("  SIZE: ");
-      DBG_OUTPUT_PORT.println(file.size());
+    if (SPIFFS.exists(pathWithGz) || SPIFFS.exists(path)) {
+        if (SPIFFS.exists(pathWithGz))
+            path += ".gz";
+
+        File file = SPIFFS.open(path, "r");
+        size_t sent = webServer->streamFile(file, contentType);
+        file.close();
+
+        return true;
     }
-    file = root.openNextFile();
-  }
+
+    return false;
+}
+
+String webServerGetContentType(String filename) {
+    if (webServer->hasArg("download")) return "application/octet-stream";
+    else if (filename.endsWith(".htm")) return "text/html";
+    else if (filename.endsWith(".html")) return "text/html";
+    else if (filename.endsWith(".css")) return "text/css";
+    else if (filename.endsWith(".js")) return "application/javascript";
+    else if (filename.endsWith(".png")) return "image/png";
+    else if (filename.endsWith(".gif")) return "image/gif";
+    else if (filename.endsWith(".jpg")) return "image/jpeg";
+    else if (filename.endsWith(".ico")) return "image/x-icon";
+    else if (filename.endsWith(".xml")) return "text/xml";
+    else if (filename.endsWith(".pdf")) return "application/x-pdf";
+    else if (filename.endsWith(".zip")) return "application/x-zip";
+    else if (filename.endsWith(".gz")) return "application/x-gzip";
+    return "text/plain";
+}
+
+void webServerReturnFail(String msg) {
+    webServer->send(500, "text/plain", msg + "\r\n");
+}
+
+void initWebSocket() {
+    Serial.println("/* Initializing Web Sockets */");
+
+    webSocket.begin();
+    webSocket.onEvent(webSocketHandler);
+
+    Serial.println("Web sockets initilized.");
+}
+
+void webSocketHandler(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
+    switch (type) {
+        case WStype_DISCONNECTED:
+            Serial.printf("WebSocket: Disconnected: %u \r\n", num);
+            socketClients[num].isConnected = false;
+            break;
+        case WStype_CONNECTED:
+            Serial.printf("WebSocket: Connected: %u from %d.%d.%d.%d: url: %s \r\n",
+                          num, ip[0], ip[1], ip[2], ip[3], payload);
+            socketClients[num].isConnected = true;
+            break;
+        case WStype_TEXT: {
+                String data = String((char *) &payload[0]);
+                switch (data.charAt(0)) {
+                    case SGN_PAGE_STATE:
+                        socketClients[num].page = data.charAt(1) - 48;
+
+                        if (socketClients[num].page == 0) {
+                            webSocket.sendTXT(num, String(SGN_FW_VERSION) + FW_VERSION);
+                        } else if (socketClients[num].page == 1) {
+                            webSocket.sendTXT(num,
+                                              String(SGN_SAVE_NET_CONFIGS)
+                                              + String(apSsid) + ","
+                                              + ip.toString() + ","
+                                              + String(apPasswd));
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            }
+        case WStype_BIN:
+            break;
+        default:
+            break;
+    }
+}
+
+bool listSPIFFS(fs::FS &fs, const char * dirname, uint8_t levels) {
+    Serial.println("/* Initializing SPIFFS */");
+    Serial.printf("dirname: %s \r\n", dirname);
+    Serial.printf("levels: %d \r\n", levels);
+
+    File root = fs.open(dirname);
+
+    if (!root) {
+        Serial.println("Failed to open directory.");
+        return false;
+    }
+
+    if (!root.isDirectory()) {
+        Serial.println("Not a directory.");
+        return false;
+    }
+
+    File file = root.openNextFile();
+    while (file) {
+        if (file.isDirectory()) {
+            Serial.print("  DIR : ");
+            Serial.println(file.name());
+            if (levels) {
+                listSPIFFS(fs, file.name(), levels - 1);
+            }
+        } else {
+            Serial.print("  FILE: ");
+            Serial.print(file.name());
+            Serial.print("\tSIZE: ");
+            Serial.println(file.size());
+        }
+        file = root.openNextFile();
+    }
+
+    return true;
+}
+
+void weatherStationMainHandler() {
+    for (int i = 0; i < 5; i++) {
+        if (socketClients[i].isConnected) {
+            isConnected = true;
+            break;
+        }
+    }
+
+    if (WiFi.softAPgetStationNum() > 0) {
+        if (isConnected)
+            statusLed = !statusLed;
+        else
+            statusLed = HIGH;
+    } else
+        statusLed = LOW;
+    digitalWrite(PIN_STATUS_LED, statusLed);
+
+    if (isConnected) {
+        String data = String(SGN_DATA_PVI);
+        data += String(weatherBoard.BME280Temperature, 2);
+        data += "," + String(weatherBoard.BME280Pressure, 1);
+        data += "," + String(weatherBoard.BME280Humidity, 2);
+        data += "," + String(weatherBoard.BME280Altitude, 2);
+        data += "," + String(weatherBoard.Si1132UVIndex, 2);
+        data += "," + String(weatherBoard.Si1132Visible);
+        data += "," + String(weatherBoard.Si1132IR);
+
+        for (int i = 0; i < 5; i++) {
+            if (socketClients[i].isConnected && (socketClients[i].page == 0))
+                webSocket.sendTXT(i, data);
+        }
+    }
+
+    weatherBoard.getSi1132();
+    if (weatherBoard.revision == 1) {
+        weatherBoard.getBMP180();
+        weatherBoard.getSi7020();
+    } else if (weatherBoard.revision == 2) {
+        weatherBoard.getBME280();
+    }
+
+    displaySi1132();
+    if (weatherBoard.revision == 1) {
+        displayBMP180();
+        displaySi7020();
+    } else if (weatherBoard.revision == 2) {
+        displayBME280();
+    }
+
+    GO.update();
+}
+
+void loop() {
+    webServer->handleClient();
+    webSocket.loop();
+
+    timer.run();
 }
