@@ -1,10 +1,9 @@
-#include <odroid_go.h>
 #include "BluetoothSerial.h"
 
 BluetoothSerial serialBT;
 
 void setup() {
-    GO.begin();
+    Serial.begin(115200);
 
     serialBT.begin("ODROID-GO");
     Serial.println("The device started, now you can pair it with bluetooth!");
