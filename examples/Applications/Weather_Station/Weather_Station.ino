@@ -494,8 +494,6 @@ void weatherStationMainHandler() {
     } else if (weatherBoard.revision == 2) {
         displayBME280();
     }
-
-    GO.update();
 }
 
 void loop() {
