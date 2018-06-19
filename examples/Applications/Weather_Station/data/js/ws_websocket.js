@@ -39,9 +39,9 @@ function wsConnectC() {
                 ssid = networkInfo[0];
                 ipaddr = networkInfo[1];
                 passwd = networkInfo[2];
-                $("#tf_ssid").val(ssid).textinput("refresh");
-                $("#tf_ipv4").val(ipaddr).textinput("refresh");
-                $("#tf_passwd").val(passwd).textinput("refresh");
+                $("#text_net_ssid").val(ssid).textinput("refresh");
+                $("#text_net_ipv4").val(ipaddr).textinput("refresh");
+                $("#text_net_passwd").val(passwd).textinput("refresh");
                 break;
             case DATA_PVI:
                 dataInfo = data.substring(1).split(",");
@@ -69,12 +69,6 @@ function wsConnectC() {
                         value: altitude
                     });
                 }
-                // if (altitude < 10) {
-                //     $("#sevenseg_altitude").sevenSeg({
-                //     digits: 4,
-                //     decimalPlaces: 3
-                //     });
-                // }
                 if (humidity != dataInfo[4]) {
                     humidity = dataInfo[4];
                     $("#sevenseg_uvindex").sevenSeg({

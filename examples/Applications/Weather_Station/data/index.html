@@ -12,6 +12,7 @@
 
     <script type="text/javascript" src="go_setup/network_configs"></script>
     <script type="text/javascript" src="js/jquery.mobile-1.4.5.min.js"></script>
+    <script type="text/javascript" src="js/jquery.mask.js"></script>
     <script type="text/javascript" src="js/sevenSeg.js"></script>
     <script type="text/javascript" src="js/ws_websocket.js"></script>
     <script type="text/javascript" src="js/ws_page_setup.js"></script>
@@ -132,35 +133,33 @@
         </div>
 
         <div data-role="content">
-            <form>
-                <div class="ui-body ui-body-a ui-corner-all">
-                    <h3>Network Settings</h3>
-                    <ul data-role="listview" data-inset="true">
-                        <li class="ui-field-contain">
-                            <label for="ssid">SSID:</label>
-                            <input id="tf_ssid" value="" type="text" maxlength="20">
-                        </li>
-                        <li class="ui-field-contain">
-                            <label for="tf_ipv4">IP Address:</label>
-                            <input type="text" id="tf_ipv4" class="form-control">
-                        </li>
-                        <li class="ui-field-contain">
-                            <label for="passwd">Password:</label>
-                            <input type="text" id="tf_passwd" class="form-control" maxlength="8">
-                        </li>
-                        <li class="ui-body ui-body-b">
-                            <fieldset class="ui-grid-a">
-                                <div class="ui-block-a">
-                                    <input id="btn_save_network" value="Save" type="button">
-                                </div>
-                                <div class="ui-block-b">
-                                    <input id="btn_reset_network" value="Reset" type="button">
-                                </div>
-                            </fieldset>
-                        </li>
-                    </ul>
-                </div>
-            </form>
+            <div class="ui-body ui-body-a ui-corner-all">
+                <h3>Network Settings</h3>
+                <ul data-role="listview" data-inset="true">
+                    <li class="ui-field-contain">
+                        <label for="text_net_ipv4">IP Address</label>
+                        <input type="text" id="text_net_ipv4" class="form-control">
+                    </li>
+                    <li class="ui-field-contain">
+                        <label for="text_net_ssid">SSID</label>
+                        <input type="text" id="text_net_ssid" class="form-control" maxlength="20">
+                    </li>
+                    <li class="ui-field-contain">
+                        <label for="text_net_passwd">Password</label>
+                        <input type="text" id="text_net_passwd" class="form-control" maxlength="20">
+                    </li>
+                    <li class="ui-body ui-body-b">
+                        <fieldset class="ui-grid-a">
+                            <div class="ui-block-a">
+                                <input id="btn_save_network" value="Save" type="button">
+                            </div>
+                            <div class="ui-block-b">
+                                <input id="btn_reset_network" value="Reset" type="button">
+                            </div>
+                        </fieldset>
+                    </li>
+                </ul>
+            </div>
         </div>
 
         <div data-role="footer" data-position="fixed">
