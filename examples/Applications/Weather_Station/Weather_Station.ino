@@ -3,9 +3,9 @@
 #include <WiFi.h>
 #include <FS.h>
 #include <SPIFFS.h>
-#include <WebSocketsServer.h>
-#include <WebServer.h>
-#include <SimpleTimer.h>
+#include "web/WebSocketsServer.h"
+#include "web/WebServer.h"
+#include "web/SimpleTimer.h"
 #include "WeatherBoard.h"
 
 const double FW_VERSION = 1.0;

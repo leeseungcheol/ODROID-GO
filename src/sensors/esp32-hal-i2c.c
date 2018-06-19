@@ -13,7 +13,8 @@
 // limitations under the License.
 
 #include "esp32-hal-i2c.h"
-#include "esp32-hal.h"
+#include "esp32-hal-log.h"
+#include "esp32-hal-gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
