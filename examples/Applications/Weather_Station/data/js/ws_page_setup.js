@@ -56,7 +56,7 @@ $(function() {
     });
 
     $("#btn_reset_network").click(function() {
-        $("#tf_ssid").val("smartpower2").textinput("refresh");
+        $("#tf_ssid").val("ODROID_GO").textinput("refresh");
         $("#tf_ipv4").val("192.168.4.1").textinput("refresh");
         $("#tf_passwd").val("12345678").textinput("refresh");
     });

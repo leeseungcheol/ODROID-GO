@@ -28,8 +28,7 @@ const char *DEFAULT_AP_PASSWD = "12345678";
 const int DEFAULT_WEBSERVER_PORT = 80;
 const int DEFAULT_WEBSOCKET_PORT = 81;
 
-// 180611: Proceed without implementing network configuration for now.
-const char *CONFIGS_PATH = "/go_setup/network_configs.txt";
+const char *CONFIGS_PATH = "/go_setup/network_configs";
 
 char apSsid[20];
 char apPasswd[20];
@@ -41,7 +40,7 @@ SimpleTimer timer;
 WeatherBoard weatherBoard;
 
 uint8_t statusLed = LOW;
-bool isConnected = false;
+bool isSocketConnected = false;
 uint16_t backgroundColor;
 
 struct socketClients {
@@ -192,16 +191,10 @@ void setup() {
     }
 }
 
-void readNetworkConfigs() {
-    Serial.println("/* Network Configuration */");
+bool writeDefaultNetworkConfigs() {
+    File f = SPIFFS.open(CONFIGS_PATH, "w");
 
-    File f;
-
-    if (!SPIFFS.exists(CONFIGS_PATH)) {
-        Serial.println("Configuration file not found. Trying to create a new file.");
-
-        f = SPIFFS.open(CONFIGS_PATH, "w");
-
+    if (f) {
         f.println("ipaddr=\"" + String(DEFAULT_IP) + "\"");
         f.println("ssid=\"" + String(DEFAULT_AP_SSID_PREFIX) + CHIP_ID + "\"");
         f.println("passwd=\"" + String(DEFAULT_AP_PASSWD) + "\"");
@@ -209,7 +202,36 @@ void readNetworkConfigs() {
         f.flush();
         f.close();
 
-        if (SPIFFS.exists(CONFIGS_PATH)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool writeNetworkConfigs(String ip, String ssid, String passwd) {
+    File f = SPIFFS.open(CONFIGS_PATH, "w");
+
+    if (f) {
+        f.println("ipaddr=\"" + ip + "\"");
+        f.println("ssid=\"" + ssid + "\"");
+        f.println("passwd=\"" + passwd + "\"");
+
+        f.flush();
+        f.close();
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void readNetworkConfigs() {
+    Serial.println("/* Network Configuration */");
+
+    if (!SPIFFS.exists(CONFIGS_PATH)) {
+        Serial.println("Configuration file not found. Trying to create a new file.");
+
+        if (writeDefaultNetworkConfigs() && SPIFFS.exists(CONFIGS_PATH)) {
             Serial.println("Configuration file created.");
         } else {
             Serial.println("File creation failed.");
@@ -217,7 +239,7 @@ void readNetworkConfigs() {
         }
     }
 
-    f = SPIFFS.open(CONFIGS_PATH, "r");
+    File f = SPIFFS.open(CONFIGS_PATH, "r");
     int readIp[4];
 
     if (!f) {
@@ -267,6 +289,7 @@ void initWifi() {
 
 void initWebServer() {
     Serial.println("/* Initializing Web Server */");
+
     webServer = new WebServer(DEFAULT_WEBSERVER_PORT);
     webServer->on("/list", HTTP_GET, webServerFileListHandler);
     webServer->onNotFound([]() {
@@ -384,7 +407,7 @@ void webSocketHandler(uint8_t num, WStype_t type, uint8_t *payload, size_t lengt
         case WStype_TEXT: {
                 String data = String((char *) &payload[0]);
                 switch (data.charAt(0)) {
-                    case SGN_PAGE_STATE:
+                    case SGN_PAGE_STATE: {
                         socketClients[num].page = data.charAt(1) - 48;
 
                         if (socketClients[num].page == 0) {
@@ -397,6 +420,27 @@ void webSocketHandler(uint8_t num, WStype_t type, uint8_t *payload, size_t lengt
                                               + String(apPasswd));
                         }
                         break;
+                    }
+                    case SGN_SAVE_NET_CONFIGS: {
+                        String _ssid = data.substring(1, data.indexOf(','));
+                        data.remove(1, data.indexOf(','));
+                        String _ip = data.substring(1, data.indexOf(','));
+                        data.remove(1, data.indexOf(','));
+                        String _passwd = data.substring(1, data.indexOf(','));
+
+                        if ((String(DEFAULT_IP) != _ip) ||
+                            (String(DEFAULT_AP_SSID_PREFIX) + CHIP_ID != _ssid) ||
+                            (String(DEFAULT_AP_PASSWD) != _passwd)) {
+
+                            if (writeNetworkConfigs(_ip, _ssid, _passwd)) {
+                                Serial.println("WebSocket: Saving a new network configuration successed.");
+                                reboot();
+                            } else {
+                                Serial.println("WebSocket: Saving a new network configuration failed.");
+                            }
+                        }
+                        break;
+                    }
                     default:
                         break;
                 }
@@ -446,38 +490,31 @@ bool listSPIFFS(fs::FS &fs, const char * dirname, uint8_t levels) {
     return true;
 }
 
-void weatherStationMainHandler() {
+void checkSocketConnected() {
     for (int i = 0; i < 5; i++) {
         if (socketClients[i].isConnected) {
-            isConnected = true;
-            break;
+            isSocketConnected = true;
+            return;
         }
     }
 
+    isSocketConnected = false;
+}
+
+void reboot() {
+    Serial.println("ODROID GO will reboot.");
+    ESP.restart();
+}
+
+void weatherStationMainHandler() {
     if (WiFi.softAPgetStationNum() > 0) {
-        if (isConnected)
+        if (isSocketConnected)
             statusLed = !statusLed;
         else
             statusLed = HIGH;
     } else
         statusLed = LOW;
     digitalWrite(PIN_STATUS_LED, statusLed);
-
-    if (isConnected) {
-        String data = String(SGN_DATA_PVI);
-        data += String(weatherBoard.BME280Temperature, 2);
-        data += "," + String(weatherBoard.BME280Pressure, 1);
-        data += "," + String(weatherBoard.BME280Humidity, 2);
-        data += "," + String(weatherBoard.BME280Altitude, 2);
-        data += "," + String(weatherBoard.Si1132UVIndex, 2);
-        data += "," + String(weatherBoard.Si1132Visible);
-        data += "," + String(weatherBoard.Si1132IR);
-
-        for (int i = 0; i < 5; i++) {
-            if (socketClients[i].isConnected && (socketClients[i].page == 0))
-                webSocket.sendTXT(i, data);
-        }
-    }
 
     weatherBoard.getSi1132();
     if (weatherBoard.revision == 1) {
@@ -494,9 +531,27 @@ void weatherStationMainHandler() {
     } else if (weatherBoard.revision == 2) {
         displayBME280();
     }
+
+    if (isSocketConnected) {
+        String data = String(SGN_DATA_PVI);
+        data += String(weatherBoard.BME280Temperature, 2);
+        data += "," + String(weatherBoard.BME280Pressure, 1);
+        data += "," + String(weatherBoard.BME280Humidity, 2);
+        data += "," + String(weatherBoard.BME280Altitude, 2);
+        data += "," + String(weatherBoard.Si1132UVIndex, 2);
+        data += "," + String(weatherBoard.Si1132Visible);
+        data += "," + String(weatherBoard.Si1132IR);
+
+        for (int i = 0; i < 5; i++) {
+            if (socketClients[i].isConnected && (socketClients[i].page == 0))
+                webSocket.sendTXT(i, data);
+        }
+    }
 }
 
 void loop() {
+    checkSocketConnected();
+
     webServer->handleClient();
     webSocket.loop();
 

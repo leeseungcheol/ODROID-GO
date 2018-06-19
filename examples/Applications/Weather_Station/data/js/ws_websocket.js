@@ -11,7 +11,6 @@ var SAVE_IPADDR = 'i';
 var SAVE_PASSWD = 'x';
 var FW_VERSION = 'f';
 
-var ipaddr = "192.168.4.1";
 var wsUriC = "ws://" + ipaddr + ":81";
 var ws;
 var pageState = 0;
