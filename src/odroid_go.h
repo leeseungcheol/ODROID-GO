@@ -3,10 +3,7 @@
 
 #if defined(ESP32)
 
-// #define MPU9250_INSDE
-
 #include <Arduino.h>
-#include <Wire.h>
 #include <SPI.h>
 #include "utility/Config.h"
 
@@ -15,14 +12,6 @@
 #include "utility/music_8bit.h"
 #include "utility/Button.h"
 #include "utility/bmp_map.h"
-
-/*
-#include "utility/ODROID_Si1132.h"
-#include "utility/ODROID_Si70xx.h"
-#include "utility/Adafruit_Sensor.h"
-#include "utility/Adafruit_BMP085_U.h"
-#include "utility/Adafruit_BME280.h"
-*/
 
 extern "C" {
 #include "esp_sleep.h"
@@ -45,7 +34,6 @@ class ODROID_GO {
     Button BtnStart = Button(BUTTON_START, true, DEBOUNCE_MS);
 
     // LCD
-//Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK);
     ILI9341 lcd = ILI9341();
     SPEAKER Speaker;
 

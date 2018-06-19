@@ -21,12 +21,6 @@ void ODROID_GO::begin() {
     pinMode(BUTTON_JOY_Y, INPUT_PULLDOWN);
     pinMode(BUTTON_JOY_X, INPUT_PULLDOWN);
 
-    // I2C
-    /*
-    pinMode(SCL, OUTPUT);
-    digitalWrite(SDA, 1);
-    */
-
     // ODROID_GO LCD INIT
     lcd.begin();
     lcd.setRotation(7);

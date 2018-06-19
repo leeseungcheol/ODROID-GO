@@ -1,5 +1,5 @@
 #include <odroid_go.h>
-#include <Wire.h>
+#include "sensors/Wire.h"
 #include <WiFi.h>
 #include <FS.h>
 #include <SPIFFS.h>

@@ -24,7 +24,7 @@
 #endif
 
 #include "Adafruit_Sensor.h"
-#include <Wire.h>
+#include "sensors/Wire.h"
 
 /*=========================================================================
     I2C ADDRESS/BITS

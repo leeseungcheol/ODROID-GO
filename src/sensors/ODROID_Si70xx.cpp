@@ -1,4 +1,5 @@
 #include "ODROID_Si70xx.h"
+#include "sensors/Wire.h"
 
 ODROID_Si70xx::ODROID_Si70xx()
 {

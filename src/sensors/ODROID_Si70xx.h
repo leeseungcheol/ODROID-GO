@@ -6,7 +6,6 @@
 #else
 	#include "WProgram.h"
 #endif
-#include "Wire.h"
 
 /* Commands */
 #define CMD_MEASURE_HUMIDITY_HOLD	0xE5

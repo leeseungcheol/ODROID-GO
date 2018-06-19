@@ -15,7 +15,7 @@
   BSD license, all text above must be included in any redistribution
  ***************************************************************************/
 #include "Arduino.h"
-#include <Wire.h>
+#include "sensors/Wire.h"
 #include <SPI.h>
 #include "Adafruit_BME280.h"
 
