@@ -48,6 +48,8 @@ $(function() {
         }
     });
 
+    $("#text_net_ipv4").prop("disabled", true);
+
     $("#text_net_ipv4").mask('0ZZ.0ZZ.0ZZ.0ZZ', {
         translation: {
             'Z': {
