@@ -276,11 +276,10 @@ void readNetworkConfigs() {
 void initWifi() {
     Serial.println("/* Initializing WiFi */");
 
-    IPAddress gateway(ip[0], ip[1], ip[2], ip[3]);
+    IPAddress gateway(ip[0], ip[1], ip[2], 1);
     IPAddress subnet(255, 255, 255, 0);
 
-    WiFi.softAPConfig(ip, gateway, subnet);
-    if (WiFi.softAP(apSsid, apPasswd)) {
+    if (WiFi.softAPConfig(ip, gateway, subnet) && WiFi.softAP(apSsid, apPasswd)) {
         Serial.println("WiFi initilized.");
     } else {
         Serial.println("WiFi initilizing failed.");
