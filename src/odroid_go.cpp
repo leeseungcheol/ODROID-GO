@@ -30,6 +30,9 @@ void ODROID_GO::begin() {
     lcd.setTextSize(1);
     lcd.setBrightness(255);
 
+    // Battery
+    battery.begin();
+
     Serial.println("OK");
 }
 
@@ -47,5 +50,6 @@ void ODROID_GO::update() {
 
     //Speaker update
     Speaker.update();
+    battery.update();
 }
 ODROID_GO GO;

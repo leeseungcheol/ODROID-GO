@@ -12,6 +12,7 @@
 #include "utility/music_8bit.h"
 #include "utility/Button.h"
 #include "utility/bmp_map.h"
+#include "utility/battery.h"
 
 extern "C" {
 #include "esp_sleep.h"
@@ -36,6 +37,7 @@ class ODROID_GO {
     // LCD
     ILI9341 lcd = ILI9341();
     SPEAKER Speaker;
+    Battery battery;
 
 
 };
