@@ -43,7 +43,7 @@ void setup(void) {
   GO.begin();                   // M5STACK INITIALIZE
   GO.lcd.setBrightness(200);    // BRIGHTNESS = MAX 255
   GO.lcd.fillScreen(BLACK);     // CLEAR SCREEN
-  GO.lcd.setRotation(7);        // SCREEN ROTATION = 0
+  GO.lcd.setRotation(1);        // SCREEN ROTATION = 0
   //----------------------------// Make Block ----------------------------
   make_block( 0, BLACK);        // Type No, Color
   make_block( 1, 0x00F0);       // DDDD     RED

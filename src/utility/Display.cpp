@@ -263,8 +263,8 @@ void ILI9341::init(void) {
     writedata(0x13); // 0x18 79Hz, 0x1B default 70Hz, 0x13 100Hz
 
     writecommand(ILI9341_DFUNCTR); // Display Function Control
-    writedata(0x08);
-    writedata(0x82);
+    writedata(0x0A);
+    writedata(0xA2);
     writedata(0x27);
 
     writecommand(0xF2); // 3Gamma Function Disable

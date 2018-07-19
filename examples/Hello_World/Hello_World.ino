@@ -14,7 +14,7 @@ void setup() {
 
 void displayGO() {
     GO.lcd.clearDisplay();
-    GO.lcd.setRotation(rotate + 4);
+    GO.lcd.setRotation(rotate);
     GO.lcd.setCursor(30, 40);
 
     if (idx) {

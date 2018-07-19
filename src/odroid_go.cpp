@@ -23,7 +23,7 @@ void ODROID_GO::begin() {
 
     // ODROID_GO LCD INIT
     lcd.begin();
-    lcd.setRotation(7);
+    lcd.setRotation(1);
     lcd.fillScreen(BLACK);
     lcd.setCursor(0, 0);
     lcd.setTextColor(WHITE);
