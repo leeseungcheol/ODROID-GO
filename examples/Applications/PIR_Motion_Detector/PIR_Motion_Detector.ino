@@ -5,6 +5,7 @@
 
 int prePirValue;
 int pirValue;
+int sensorBlockingTimeout;
 
 void setup() {
     // put your setup code here, to run once:
@@ -20,21 +21,48 @@ void setup() {
     pinMode(PIN_PIR_INPUT, INPUT);
     digitalWrite(PIN_BLUE_LED, LOW);
 
+    GO.lcd.setTextSize(2);
+    GO.lcd.setTextColor(BLUE);
+    for (int i = 60; i > 0; i--) {
+        GO.lcd.fillRect(0, 100, 320, 48, BLACK);
+        GO.lcd.setCursor(6, 100);
+        GO.lcd.printf("Initilizing... %2d", i);
+        delay(1000);
+    }
+
     displayStatusUpdate();
 }
 
 void displayStatusUpdate() {
-    GO.lcd.fillRect(0, 100, 320, 48, BLACK);
+    GO.lcd.fillRect(0, 100, 320, 56, BLACK);
     GO.lcd.setTextSize(2);
 
     if (pirValue) {
         GO.lcd.setTextColor(GREEN);
         GO.lcd.setCursor(58, 100);
         GO.lcd.print("Detected");
+
+        sensorBlockingTimeout = 3;
     } else {
         GO.lcd.setTextColor(RED);
-        GO.lcd.setCursor(16, 100);
+        GO.lcd.setCursor(14, 100);
         GO.lcd.print("Not Detected");
+
+        while (prePirValue) {
+            GO.lcd.fillRect(0, 170, 320, 32, BLACK);
+            GO.lcd.setTextSize(2);
+
+            if (sensorBlockingTimeout == 0) {
+                break;
+            } else {
+                GO.lcd.setTextSize(1);
+                GO.lcd.setCursor(100, 170);
+                GO.lcd.printf("Timeout: %d", sensorBlockingTimeout);
+
+                delay(1000);
+                sensorBlockingTimeout--;
+            }
+        }
     }
 }
 
