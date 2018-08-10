@@ -8,11 +8,12 @@
 
 static esp_adc_cal_characteristics_t adc_chars;
 
-LiquidCrystal_I2C *lcd;
+LiquidCrystal_I2C *lcd = NULL;
 
 void setup() {
     // put your setup code here, to run once:
-    uint8_t lcd_addr;
+    uint8_t lcd_addr = 0;
+    uint8_t cnt = 0;
 
     Wire.begin(15, 4);
     Serial.begin(115200);
@@ -21,18 +22,27 @@ void setup() {
     adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11);
     esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, DEFAULT_VREF, &adc_chars);
 
-    lcd_addr = getAddress();
-    if (lcd_addr < 1) {
+    while (cnt > 4) {
+        lcd_addr = getAddress();
+        if (lcd_addr > 0)
+            break;
         Serial.println("Does not find any slave address of the LCD");
-        return;
+        delay(1000);
+        cnt++;
     }
 
-    lcd = new LiquidCrystal_I2C(lcd_addr, 16, 2);
+    Serial.print("Slave address : 0x");
+    Serial.println(lcd_addr, HEX);
 
-    lcd->init();
-    lcd->backlight();
-    lcd->setCursor(0, 0);
-    lcd->print("Hello, ODROID-GO");
+    if (lcd_addr)
+        lcd = new LiquidCrystal_I2C(lcd_addr, 16, 2);
+
+    if (lcd) {
+        lcd->init();
+        lcd->backlight();
+        lcd->setCursor(0, 0);
+        lcd->print("Hello, ODROID-GO");
+    }
 }
 
 uint8_t getAddress() {
@@ -60,8 +70,10 @@ double readBatteryVoltage() {
 }
 
 void showBatteryVoltage(double voltage) {
-    lcd->setCursor(0, 1);
-    lcd->printf("Battery: %1.2lf V \n", voltage);
+    if (lcd) {
+        lcd->setCursor(0, 1);
+        lcd->printf("Battery: %1.2lf V \n", voltage);
+    }
 }
 
 void loop() {
