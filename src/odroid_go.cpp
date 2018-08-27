@@ -3,10 +3,11 @@
 
 #include "odroid_go.h"
 
-void ODROID_GO::begin() {
-    
-    // UART 
-    Serial.begin(115200);
+void ODROID_GO::begin(unsigned long baud) {
+
+    // UART
+    Serial.begin(baud);
+
     Serial.flush();
     Serial.print("ODROID_GO initializing...");
 

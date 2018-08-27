@@ -21,7 +21,7 @@ extern "C" {
 class ODROID_GO {
 
  public:
-    void begin();
+    void begin(unsigned long baud = 115200);
     void update();
 
     #define DEBOUNCE_MS 5
