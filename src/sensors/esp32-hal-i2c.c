@@ -1123,7 +1123,14 @@ i2c_err_t i2cAttachSCL(i2c_t * i2c, int8_t scl)
         return I2C_ERROR_DEV;
     }
     digitalWrite(scl, HIGH);
-    pinMode(scl, OPEN_DRAIN | PULLUP | INPUT | OUTPUT);
+
+    //- { ODROID-GO QWERTY
+    if(scl == 12)
+        pinMode(scl, INPUT | OUTPUT);
+    else
+        pinMode(scl, OPEN_DRAIN | PULLUP | INPUT | OUTPUT);
+    //- }
+
     pinMatrixOutAttach(scl, I2C_SCL_IDX(i2c->num), false, false);
     pinMatrixInAttach(scl, I2C_SCL_IDX(i2c->num), false);
     return I2C_ERROR_OK;
