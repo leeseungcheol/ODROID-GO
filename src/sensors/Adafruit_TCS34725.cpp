@@ -161,13 +161,12 @@ Adafruit_TCS34725::Adafruit_TCS34725(tcs34725IntegrationTime_t it, tcs34725Gain_
     doing anything else)
 */
 /**************************************************************************/
-boolean Adafruit_TCS34725::begin(void) 
+boolean Adafruit_TCS34725::begin(void)
 {
   Wire.begin();
-  
+
   /* Make sure we're actually connected */
   uint8_t x = read8(TCS34725_ID);
-  Serial.println(x, HEX);
   if (x != 0x44)
   {
     return false;
