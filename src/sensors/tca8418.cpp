@@ -78,6 +78,8 @@ bool KEYS::configureKeys(uint8_t rows, uint16_t cols, uint8_t config)
 
   config |= CFG_AI;
   writeByte(config, REG_CFG);
+
+  return true;
 }
 
 void KEYS::writeByte(uint8_t data, uint8_t reg) {
