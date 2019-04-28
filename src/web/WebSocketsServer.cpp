@@ -494,6 +494,8 @@ void WebSocketsServer::messageReceived(WSclient_t * client, WSopcode_t opcode, u
         case WSop_ping:
         case WSop_pong:
             break;
+        default:
+            break;
     }
 
     runCbEvent(client->num, type, payload, length);

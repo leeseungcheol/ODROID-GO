@@ -69,7 +69,7 @@ bool KEYS::configureKeys(uint8_t rows, uint16_t cols, uint8_t config)
 {
   //Pins all default to GPIO. pinMode(x, KEYPAD); may be used for individual pins.
   writeByte(rows, REG_KP_GPIO1);
-  
+
   uint8_t col_tmp;
   col_tmp = (uint8_t)(0xff & cols);
   writeByte(col_tmp, REG_KP_GPIO2);
@@ -78,14 +78,13 @@ bool KEYS::configureKeys(uint8_t rows, uint16_t cols, uint8_t config)
 
   config |= CFG_AI;
   writeByte(config, REG_CFG);
-
   return true;
 }
 
 void KEYS::writeByte(uint8_t data, uint8_t reg) {
   Wire.beginTransmission(_address);
   I2CWRITE((uint8_t) reg);
-  
+
   I2CWRITE((uint8_t) data);
   Wire.endTransmission();
 
@@ -97,7 +96,7 @@ bool KEYS::readByte(uint8_t *data, uint8_t reg) {
   I2CWRITE((uint8_t) reg);
   Wire.endTransmission();
   uint8_t timeout=0;
-  
+
   Wire.requestFrom(_address, (uint8_t) 0x01);
   while(Wire.available() < 1) {
     timeout++;
@@ -106,7 +105,7 @@ bool KEYS::readByte(uint8_t *data, uint8_t reg) {
 	}
 	delay(1);
   } 			// Experimental
-  
+
   *data = I2CREAD();
 
 return(false);
@@ -119,16 +118,16 @@ void KEYS::write3Bytes(uint32_t data, uint8_t reg) {
     uint8_t b[4];
     uint32_t w;
   } datau;
-  
+
   datau.w = data;
 
   Wire.beginTransmission(_address);
   I2CWRITE((uint8_t) reg);
-  
+
   I2CWRITE((uint8_t) datau.b[0]);
   I2CWRITE((uint8_t) datau.b[1]);
   I2CWRITE((uint8_t) datau.b[2]);
-  
+
   Wire.endTransmission();
   return;
 }
@@ -140,14 +139,14 @@ bool KEYS::read3Bytes(uint32_t *data, uint8_t reg) {
     uint8_t b[4];
     uint32_t w;
   } datau;
-  
+
   datau.w = *data;
 
   Wire.beginTransmission(_address);
   I2CWRITE((uint8_t) reg);
   Wire.endTransmission();
   uint8_t timeout=0;
-  
+
   Wire.requestFrom(_address, (uint8_t) 0x03);
   while(Wire.available() < 3) {
     timeout++;
@@ -156,20 +155,20 @@ bool KEYS::read3Bytes(uint32_t *data, uint8_t reg) {
 	}
 	delay(1);
   } 		//Experimental
-  
+
   datau.b[0] = I2CREAD();
   datau.b[1] = I2CREAD();
   datau.b[2] = I2CREAD();
-  
+
   *data = datau.w;
-  
+
 
 return(false);
 }
 
 void KEYS::pinMode(uint32_t pin, uint8_t mode) {
   uint32_t pullUp, dbc;
-  
+
   readGPIO();
   switch(mode) {
     case INPUT:
@@ -182,7 +181,7 @@ void KEYS::pinMode(uint32_t pin, uint8_t mode) {
 	  bitClear(_PORT, pin);
 	  bitClear(_DDR, pin);
 	  bitClear(_PKG, pin);
-	  bitClear(_PUR, pin); 
+	  bitClear(_PUR, pin);
 	  break;
     case OUTPUT:
 	  bitClear(_PORT, pin);
@@ -194,7 +193,7 @@ void KEYS::pinMode(uint32_t pin, uint8_t mode) {
 	  bitClear(_PORT, pin);
 	  bitClear(_DDR, pin);
 	  bitSet(_PKG, pin);
-	  bitClear(_PUR, pin); 
+	  bitClear(_PUR, pin);
 	  break;
 	case DEBOUNCE:
 	  read3Bytes((uint32_t *)&dbc, REG_DEBOUNCE_DIS1);
@@ -215,7 +214,7 @@ void KEYS::pinMode(uint32_t pin, uint8_t mode) {
 
 void KEYS::digitalWrite(uint32_t pin, uint8_t value) {
 
-  
+
   if(value)
     bitSet(_PORT, pin);
   else
@@ -227,35 +226,35 @@ void KEYS::digitalWrite(uint32_t pin, uint8_t value) {
 uint8_t KEYS::digitalRead(uint32_t pin) {
 
   readGPIO();
-  
+
   return(_PIN & bit(pin)) ? HIGH : LOW;
 }
 
 void KEYS::write(uint32_t value) {
 
   _PORT = value;
-  
+
   updateGPIO();
 }
 
 uint32_t KEYS::read(void) {
 
   readGPIO();
-  
+
   return _PORT;
 }
 
 void KEYS::toggle(uint32_t pin) {
 
   _PORT ^= (bit(pin));
-  
+
   updateGPIO();
 }
 
 void KEYS::blink(uint32_t pin, uint16_t count, uint32_t duration) {
 
   duration /= count * 2;
-  
+
   while(count--) {
     toggle(pin);
 	delay(duration);
@@ -268,7 +267,7 @@ void KEYS::blink(uint32_t pin, uint16_t count, uint32_t duration) {
 void KEYS::enableInterrupt(uint8_t pin, void(*selfCheckFunction)(void)) {
 
   _pcintPin = pin;
-  
+
 #if ARDUINO >= 100
   ::pinMode(pin, INPUT_PULLUP);
 #else
@@ -286,7 +285,7 @@ void KEYS::disableInterrupt() {
 void KEYS::pinInterruptMode(uint32_t pin, uint8_t mode, uint8_t level, uint8_t fifo) {
   uint32_t intSetting, levelSetting, eventmodeSetting;
 
-	
+
   read3Bytes((uint32_t *)&intSetting, REG_GPIO_INT_EN1);
   read3Bytes((uint32_t *)&levelSetting, REG_GPIO_INT_LVL1);
   read3Bytes((uint32_t *)&eventmodeSetting, REG_GPI_EM1);
@@ -301,7 +300,7 @@ void KEYS::pinInterruptMode(uint32_t pin, uint8_t mode, uint8_t level, uint8_t f
 	default:
 		break;
   }
-  
+
   switch(level) {
     case LOW:
 	  bitClear(levelSetting, pin);
@@ -312,7 +311,7 @@ void KEYS::pinInterruptMode(uint32_t pin, uint8_t mode, uint8_t level, uint8_t f
 	default:
 	  break;
   }
-  
+
   switch(fifo) {
     case FIFO:
 	  bitSet(eventmodeSetting, pin);
@@ -323,11 +322,11 @@ void KEYS::pinInterruptMode(uint32_t pin, uint8_t mode, uint8_t level, uint8_t f
 	default:
 	  break;
   }
-  
+
   write3Bytes((uint32_t)intSetting, REG_GPIO_INT_EN1);
   write3Bytes((uint32_t)levelSetting, REG_GPIO_INT_LVL1);
   write3Bytes((uint32_t)eventmodeSetting, REG_GPI_EM1);
-  
+
 }
 
 void KEYS::pinInterruptMode(uint32_t pin, uint8_t mode) {
@@ -342,7 +341,7 @@ void KEYS::readGPIO() {
 	/* Store old _PIN value */
 	_oldPIN = _PIN;
 #endif
-	
+
 	read3Bytes((uint32_t *)&_PORT, REG_GPIO_DAT_OUT1);  //Read Data OUT Registers
 	read3Bytes((uint32_t *)&_PIN, REG_GPIO_DAT_STAT1);	//Read Data STATUS Registers
 	read3Bytes((uint32_t *)&_DDR, REG_GPIO_DIR1);		//Read Data DIRECTION Registers
@@ -372,7 +371,7 @@ void KEYS::dumpreg(void) {
 
 uint8_t KEYS::getInterruptStatus(void) {
   uint8_t status;
-  
+
   readByte(&status, REG_INT_STAT);
   return(status & 0x0F);
 }
@@ -390,7 +389,7 @@ void KEYS::clearInterruptStatus(void) {
 uint8_t KEYS::getKeyEvent(uint8_t event) {
   uint8_t reg;
   uint8_t keycode = 0;
-  
+
   if (event > 9)
     return 0x0;
 
@@ -409,19 +408,19 @@ uint8_t KEYS::getKeyEvent(void) {
 
 uint8_t KEYS::getKeyEventCount(void) {
   uint8_t count;
-  
+
   readByte(&count, REG_KEY_LCK_EC);
   return(count & 0x0F);
 }
 
 uint32_t KEYS::getGPIOInterrupt(void) {
   uint32_t Ints;
-  
+
   union {
     uint32_t val;
 	uint8_t arr[4];
   } IntU;
-  
+
   readByte(&IntU.arr[2], REG_GPIO_INT_STAT3);
   readByte(&IntU.arr[1], REG_GPIO_INT_STAT2);
   readByte(&IntU.arr[0], REG_GPIO_INT_STAT1);
@@ -439,10 +438,10 @@ bool KEYS::isKeyDown(uint8_t key) {
 
 bool KEYS::getKey(uint8_t *key) {
   uint8_t tmpkey;
-  
+
   tmpkey = readKeypad();
   *key = *key & 0x7F;
-  
+
   return(isKeyDown(tmpkey));
 }
 

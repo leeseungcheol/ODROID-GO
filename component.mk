@@ -8,4 +8,3 @@
 
 COMPONENT_SRCDIRS := src src/utility src/sensors src/sensors/ir src/web src/web/libb64 src/web/detail src/web/libsha1 src/Fonts src/Fonts/GFXFF src/Fonts/Custom src/Fonts/TrueType
 COMPONENT_ADD_INCLUDEDIRS := src src/utility src/sensors src/sensors/ir src/web src/web/libb64 src/web/detail src/web/libsha1 src/Fonts src/Fonts/GFXFF src/Fonts/Custom src/Fonts/TrueType
-
