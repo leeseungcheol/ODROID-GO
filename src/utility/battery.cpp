@@ -5,6 +5,7 @@
  *      Author: mdrjr
  */
 
+#include <esp_sleep.h>
 #include "battery.h"
 
 Battery::Battery() {
