@@ -30,13 +30,18 @@ double Battery::getVoltage() {
 }
 
 int Battery::getPercentage() {
-
-	int res = 101 - (101 / pow(1 + pow(1.33 * ((int)(getVoltage() * 100) - BATTERY_VMIN)/(BATTERY_VMAX - BATTERY_VMIN), 4.5), 3));
-
-	if(res >= 100)
-		res = 100;
-
-	return res;
+    int voltage_by_100 = (int)(getVoltage() * 100);
+    
+    if(voltage_by_100 > BATTERY_VMAX) {
+        return 100;
+    } else if(voltage_by_100 < BATTERY_VMIN) {
+        return 0;
+    } else {
+        int res = 101 - (101 / pow(1 + pow(1.33 * (voltage_by_100 - BATTERY_VMIN)/(BATTERY_VMAX - BATTERY_VMIN), 4.5), 3));
+        if(res > 100)
+            res = 100;
+        return res;
+    }
 }
 
 void Battery::setProtection(bool enable) {
