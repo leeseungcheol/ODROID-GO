@@ -1,7 +1,7 @@
 {
-    "name": "name=ODROID-GO",
+    "name": "ODROID-GO",
     "keywords": "esp32,odroid",
-    "description": "sentence=A library for ODROID-GO development kit",
+    "description": "A library for ODROID-GO development kit",
     "repository": {
         "type": "git",
         "url": "https://github.com/hardkernel/ODROID-GO"
