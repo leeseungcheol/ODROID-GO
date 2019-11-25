@@ -82,3 +82,22 @@ Additionally each emulator includes an in game menu for further management.
 - [x] PC Engine
 
 ![Downloads](https://img.shields.io/github/downloads/retro-esp32/RetroESP32/total?style=for-the-badge)
+
+## ESPlay Retro Emulation
+> Retro-EMU
+
+[Go Play](https://github.com/pebri86/esplay-retro-emulation) from [@pebri86](https://github.com/pebri86) 
+
+This projects is a set of firmware for playing second and third generation gaming platform and to be runs on esplay-micro-hardware, an ESP32 Devices with WROVER Module (4MB PSRAM)
+
+### Support
+> Emulator Count - **6**
+
+- [x] Nintendo Entertainment System
+- [x] Nintendo Game Boy
+- [x] Nintendo Game Boy Color
+- [x] Sega Master System
+- [x] Sega Game Gear
+- [x] Colecovision
+
+![Downloads](https://img.shields.io/github/downloads/pebri86/esplay-retro-emulation/total?style=for-the-badge)
