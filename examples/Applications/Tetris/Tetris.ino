@@ -39,7 +39,6 @@ Block blocks[7] = {
 extern uint8_t tetris_img[];
 //========================================================================
 void setup(void) {
-  Serial.begin(115200);         // SERIAL
   GO.begin();                   // M5STACK INITIALIZE
   GO.lcd.setBrightness(200);    // BRIGHTNESS = MAX 255
   GO.lcd.fillScreen(BLACK);     // CLEAR SCREEN
